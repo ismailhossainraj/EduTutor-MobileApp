@@ -42,16 +42,23 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> register(
-    String email,
-    String password,
-    String firstName,
-    String lastName,
-    String? department,
-    String? className,
+  Future<bool> register({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
     String? gender,
-    UserRole role,
-  ) async {
+    required UserRole role,
+    // Student specific fields
+    String? schoolName,
+    String? classLevel,
+    // Teacher specific fields
+    String? college,
+    String? educationLevel,
+    String? university,
+    String? interest,
+    String? phoneNumber,
+  }) async {
     _setLoading(true);
     try {
       final user = await _authService.registerWithEmailAndPassword(
@@ -59,10 +66,15 @@ class AuthProvider with ChangeNotifier {
         password: password,
         firstName: firstName,
         lastName: lastName,
-        department: department,
-        className: className,
         gender: gender,
         role: role,
+        schoolName: schoolName,
+        classLevel: classLevel,
+        college: college,
+        educationLevel: educationLevel,
+        university: university,
+        interest: interest,
+        phoneNumber: phoneNumber,
       );
       if (user != null) {
         _user = await _authService.getUserInfo(user.uid);

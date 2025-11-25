@@ -12,10 +12,17 @@ class AuthService {
     required String password,
     required String firstName,
     required String lastName,
-    String? department,
-    String? className,
     String? gender,
     required UserRole role,
+    // Student specific fields
+    String? schoolName,
+    String? classLevel,
+    // Teacher specific fields
+    String? college,
+    String? educationLevel,
+    String? university,
+    String? interest,
+    String? phoneNumber,
   }) async {
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
@@ -29,11 +36,18 @@ class AuthService {
           email: email,
           firstName: firstName,
           lastName: lastName,
-          department: department,
-          className: className,
           gender: gender,
           role: role,
           createdAt: DateTime.now(),
+          // Student fields
+          schoolName: schoolName,
+          classLevel: classLevel,
+          // Teacher fields
+          college: college,
+          educationLevel: educationLevel,
+          university: university,
+          interest: interest,
+          phoneNumber: phoneNumber,
         );
         await _firestore
             .collection('users')
