@@ -3,8 +3,11 @@ import 'app_colors.dart';
 
 class AppTheme {
   static final ThemeData lightTheme = ThemeData(
-    primaryColor: AppColors.primary,
-    scaffoldBackgroundColor: AppColors.background,
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: Brightness.light,
+    ),
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.primary,
       iconTheme: IconThemeData(color: Colors.white),
@@ -47,11 +50,6 @@ class AppTheme {
       filled: true,
       fillColor: Colors.white,
     ),
-    buttonTheme: ButtonThemeData(
-      buttonColor: AppColors.primary,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      textTheme: ButtonTextTheme.primary,
-    ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
@@ -66,9 +64,12 @@ class AppTheme {
     ),
   );
 
-  static final ThemeData darkTheme = ThemeData.dark().copyWith(
-    primaryColor: AppColors.primary,
-    scaffoldBackgroundColor: const Color(0xFF121212),
+  static final ThemeData darkTheme = ThemeData(
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: Brightness.dark,
+    ),
     appBarTheme: const AppBarTheme(
       backgroundColor: Color(0xFF1E1E1E),
       iconTheme: IconThemeData(color: Colors.white),
