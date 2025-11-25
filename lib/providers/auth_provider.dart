@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -9,6 +10,18 @@ class AuthProvider with ChangeNotifier {
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
+
+  AuthProvider() {
+    _checkCurrentUser();
+  }
+  Future<void> _checkCurrentUser() async {
+    _setLoading(true);
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId != null) {
+      _user = await _authService.getUserInfo(currentUserId);
+    }
+    _setLoading(false);
+  }
 
   Future<bool> login(String email, String password) async {
     _setLoading(true);

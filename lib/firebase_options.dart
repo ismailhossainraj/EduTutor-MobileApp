@@ -17,29 +17,17 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -58,6 +46,44 @@ class DefaultFirebaseOptions {
     messagingSenderId: '897109921824',
     projectId: 'edututorapps',
     storageBucket: 'edututorapps.firebasestorage.app',
+  );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyB9KP9gZxATqhW4HJ7753rAGYCfZ_6HdtE',
+    appId: '1:897109921824:web:9413f6d592cb38bdf2ec45',
+    messagingSenderId: '897109921824',
+    projectId: 'edututorapps',
+    authDomain: 'edututorapps.firebaseapp.com',
+    storageBucket: 'edututorapps.firebasestorage.app',
+    measurementId: 'G-G6C9LJCQ1V',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyDMkcD7H79XPTY4uON0D3aF0tyrX2x6T3U',
+    appId: '1:897109921824:ios:379056b1a1c3b873f2ec45',
+    messagingSenderId: '897109921824',
+    projectId: 'edututorapps',
+    storageBucket: 'edututorapps.firebasestorage.app',
+    iosBundleId: 'com.example.edututormobile',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyDMkcD7H79XPTY4uON0D3aF0tyrX2x6T3U',
+    appId: '1:897109921824:ios:379056b1a1c3b873f2ec45',
+    messagingSenderId: '897109921824',
+    projectId: 'edututorapps',
+    storageBucket: 'edututorapps.firebasestorage.app',
+    iosBundleId: 'com.example.edututormobile',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyB9KP9gZxATqhW4HJ7753rAGYCfZ_6HdtE',
+    appId: '1:897109921824:web:4ed7689ae6744686f2ec45',
+    messagingSenderId: '897109921824',
+    projectId: 'edututorapps',
+    authDomain: 'edututorapps.firebaseapp.com',
+    storageBucket: 'edututorapps.firebasestorage.app',
+    measurementId: 'G-ZBX2EGHJ09',
   );
 
 }

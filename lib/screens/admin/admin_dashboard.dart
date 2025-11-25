@@ -1,12 +1,15 @@
 // ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, deprecated_member_use
 
+import 'dart:async';
+
+import 'package:edututormobile/services/student_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import 'student_management.dart';
 import 'payment_management.dart';
-
+import 'teacher_management.dart';
 
 class AdminDashboard extends StatelessWidget {
   void _showComingSoon(BuildContext context, String feature) {
@@ -18,7 +21,7 @@ class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
 
   // Example: Replace with actual data source or provider in real app
-  final int studentCount = 350;
+  // final int studentCount = 350;
   final int teacherCount = 25;
   final int courseCount = 12;
 
@@ -85,7 +88,14 @@ class AdminDashboard extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.school),
               title: const Text('Teacher Management'),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TeacherManagementScreen(),
+                  ),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.book),
@@ -132,7 +142,7 @@ class AdminDashboard extends StatelessWidget {
                   child: _AdminStatCard(
                     icon: Icons.people,
                     label: 'Students',
-                    value: studentCount.toString(),
+                    value: StudentService.getStudentCount(),
                     color: Colors.blue,
                   ),
                 ),
@@ -140,7 +150,7 @@ class AdminDashboard extends StatelessWidget {
                   child: _AdminStatCard(
                     icon: Icons.school,
                     label: 'Teachers',
-                    value: teacherCount.toString(),
+                    value: teacherCount,
                     color: Colors.green,
                   ),
                 ),
@@ -148,7 +158,7 @@ class AdminDashboard extends StatelessWidget {
                   child: _AdminStatCard(
                     icon: Icons.book,
                     label: 'Courses',
-                    value: courseCount.toString(),
+                    value: courseCount,
                     color: Colors.orange,
                   ),
                 ),
@@ -236,7 +246,7 @@ class AdminDashboard extends StatelessWidget {
 class _AdminStatCard extends StatelessWidget {
   final IconData icon;
   final String label;
-  final String value;
+  final FutureOr<int> value;
   final Color color;
 
   const _AdminStatCard({
@@ -252,8 +262,6 @@ class _AdminStatCard extends StatelessWidget {
     return Card(
       elevation: 2,
       child: Container(
-        width: 100,
-        height: 110,
         padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -263,8 +271,13 @@ class _AdminStatCard extends StatelessWidget {
               child: Icon(icon, color: color),
             ),
             const SizedBox(height: 10),
-            Text(value,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            FutureBuilder(
+              future: value is Future<int> ? value as Future<int> : Future.value(value),
+              builder: (context, asyncSnapshot) {
+                return Text(asyncSnapshot.data?.toString() ?? '-',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold));
+              }
+            ),
             const SizedBox(height: 4),
             Text(label, style: const TextStyle(fontSize: 14)),
           ],
