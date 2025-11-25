@@ -39,6 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         title: const Text('Register'),
         bottom: TabBar(
           controller: _tabController,
+          
           tabs: const [
             Tab(text: 'Student'),
             Tab(text: 'Teacher'),
