@@ -7,22 +7,40 @@ class UserModel {
   final String email;
   final String firstName;
   final String lastName;
-  final String? department;
-  final String? className;
   final String? gender;
   final UserRole role;
   final DateTime createdAt;
+
+  // Student specific fields
+  final String? schoolName;
+  final String? classLevel;
+
+  // Teacher specific fields
+  final String? college;
+  final String? educationLevel;
+  final String? university;
+  final String? interest;
+  final String? phoneNumber;
+  final List<Map<String, dynamic>>? subjects;
 
   UserModel({
     required this.uid,
     required this.email,
     required this.firstName,
     required this.lastName,
-    this.department,
-    this.className,
     this.gender,
     required this.role,
     required this.createdAt,
+    // Student fields
+    this.schoolName,
+    this.classLevel,
+    // Teacher fields
+    this.college,
+    this.educationLevel,
+    this.university,
+    this.interest,
+    this.phoneNumber,
+    this.subjects,
   });
 
   String get fullName => '$firstName $lastName';
@@ -33,11 +51,19 @@ class UserModel {
       'email': email,
       'firstName': firstName,
       'lastName': lastName,
-      'department': department,
-      'className': className,
       'gender': gender,
       'role': role.name,
       'createdAt': createdAt,
+      // Student fields
+      'schoolName': schoolName,
+      'classLevel': classLevel,
+      // Teacher fields
+      'college': college,
+      'educationLevel': educationLevel,
+      'university': university,
+      'interest': interest,
+      'phoneNumber': phoneNumber,
+      'subjects': subjects,
     };
   }
 
@@ -47,8 +73,6 @@ class UserModel {
       email: map['email'] ?? '',
       firstName: map['firstName'] ?? '',
       lastName: map['lastName'] ?? '',
-      department: map['department'],
-      className: map['className'],
       gender: map['gender'],
       role: _roleFromString(map['role']),
       createdAt: map['createdAt'] is DateTime
@@ -57,6 +81,18 @@ class UserModel {
               ? (map['createdAt'] as Timestamp).toDate()
               : DateTime.tryParse(map['createdAt']?.toString() ?? '') ??
                   DateTime.now(),
+      // Student fields
+      schoolName: map['schoolName'],
+      classLevel: map['classLevel'],
+      // Teacher fields
+      college: map['college'],
+      educationLevel: map['educationLevel'],
+      university: map['university'],
+      interest: map['interest'],
+      phoneNumber: map['phoneNumber'],
+      subjects: map['subjects'] != null
+          ? List<Map<String, dynamic>>.from(map['subjects'])
+          : null,
     );
   }
 

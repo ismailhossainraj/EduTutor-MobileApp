@@ -78,7 +78,7 @@ class TeacherProfileScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     _buildInfoRow(
-                        Icons.school, "Department", user.department ?? "N/A"),
+                        Icons.school, "Education level", user.educationLevel ?? "N/A"),
                     Divider(),
                     _buildInfoRow(Icons.person, "Gender", user.gender ?? "N/A"),
                     Divider(),
