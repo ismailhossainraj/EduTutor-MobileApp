@@ -59,6 +59,43 @@ class StudentDashboardScreen extends StatelessWidget {
                       final enrollment = enrollments[index];
                       return ListTile(
                         title: Text(enrollment.subject),
+                        subtitle: Text('Mode: ${enrollment.mode}'),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Pending Requests',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('enrollments')
+                    .where('studentId', isEqualTo: user?.uid)
+                    .where('status', isEqualTo: 'interested')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final enrollments = snapshot.data!.docs
+                      .map((doc) => EnrollmentModel.fromMap(
+                          doc.data() as Map<String, dynamic>))
+                      .toList();
+
+                  return ListView.builder(
+                    itemCount: enrollments.length,
+                    itemBuilder: (context, index) {
+                      final enrollment = enrollments[index];
+                      return ListTile(
+                        title: Text(enrollment.subject),
+                        subtitle: Text('Mode: ${enrollment.mode}'),
                       );
                     },
                   );
