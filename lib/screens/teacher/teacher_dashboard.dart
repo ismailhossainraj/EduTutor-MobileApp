@@ -83,9 +83,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
             ListTile(
               leading: const Icon(Icons.person),
               title: const Text('Profile'),
-              onTap: () {
-                Navigator.pushNamed(context, AppRoutes.teacherProfile);
-              },
+              onTap: () {},
             ),
             ListTile(
               leading: const Icon(Icons.people),
@@ -170,10 +168,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
                       QuickActionButton(
                         icon: Icons.person,
                         label: 'Profile',
-                        onTap: () {
-                          Navigator.pushNamed(
-                              context, AppRoutes.teacherProfile);
-                        },
+                        onTap: () {},
                       ),
                     ],
                   ),

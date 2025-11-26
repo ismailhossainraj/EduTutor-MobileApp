@@ -16,9 +16,6 @@ class StudentDashboard extends StatelessWidget {
       _DashboardItem("Payment History", Icons.history, Colors.purple, () {}),
       _DashboardItem("Result", Icons.grade, Colors.green, () {}),
       _DashboardItem("Schedule", Icons.schedule, Colors.red, () {}),
-      _DashboardItem("Payment", Icons.payment, Colors.teal, () {
-        Navigator.pushNamed(context, AppRoutes.payment);
-      }),
     ];
 
     return Scaffold(
