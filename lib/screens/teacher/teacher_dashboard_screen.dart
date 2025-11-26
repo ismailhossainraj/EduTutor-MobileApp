@@ -46,6 +46,7 @@ class TeacherDashboardScreen extends StatelessWidget {
                       final enrollment = enrollments[index];
                       return ListTile(
                         title: Text(enrollment.subject),
+                        subtitle: Text('Mode: ${enrollment.mode}'),
                         trailing: ElevatedButton(
                           onPressed: () {
                             FirebaseFirestore.instance
@@ -90,6 +91,7 @@ class TeacherDashboardScreen extends StatelessWidget {
                       final enrollment = enrollments[index];
                       return ListTile(
                         title: Text(enrollment.subject),
+                        subtitle: Text('Mode: ${enrollment.mode}'),
                       );
                     },
                   );

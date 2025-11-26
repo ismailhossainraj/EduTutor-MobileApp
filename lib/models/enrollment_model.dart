@@ -6,6 +6,7 @@ class EnrollmentModel {
   final String teacherId;
   final String subject;
   final String status;
+  final String mode;
   final DateTime createdAt;
 
   EnrollmentModel({
@@ -14,6 +15,7 @@ class EnrollmentModel {
     required this.teacherId,
     required this.subject,
     required this.status,
+    required this.mode,
     required this.createdAt,
   });
 
@@ -24,6 +26,7 @@ class EnrollmentModel {
       'teacherId': teacherId,
       'subject': subject,
       'status': status,
+      'mode': mode,
       'createdAt': createdAt,
     };
   }
@@ -35,6 +38,7 @@ class EnrollmentModel {
       teacherId: map['teacherId'] ?? '',
       subject: map['subject'] ?? '',
       status: map['status'] ?? '',
+      mode: map['mode'] ?? '',
       createdAt: map['createdAt'] is DateTime
           ? map['createdAt']
           : map['createdAt'] is Timestamp

@@ -21,7 +21,7 @@ class TeacherDetailsScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _createEnrollment(String subject) async {
+  Future<void> _createEnrollment(String subject, String mode) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final enrollmentRef =
@@ -32,10 +32,59 @@ class TeacherDetailsScreen extends StatelessWidget {
         'teacherId': teacher.uid,
         'subject': subject,
         'status': 'interested',
+        'mode': mode,
         'createdAt': DateTime.now(),
       };
       await enrollmentRef.set(enrollment);
     }
+  }
+
+  void _showEnrollmentDialog(BuildContext context, String subject) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        String? selectedMode;
+        return AlertDialog(
+          title: const Text('Request to Enroll'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: 'Mode'),
+                items: const [
+                  DropdownMenuItem(value: 'Online', child: Text('Online')),
+                  DropdownMenuItem(value: 'Offline', child: Text('Offline')),
+                ],
+                onChanged: (String? newValue) {
+                  selectedMode = newValue;
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (selectedMode != null) {
+                  _createEnrollment(subject, selectedMode!);
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Enrollment request sent')),
+                  );
+                }
+              },
+              child: const Text('Request'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -49,6 +98,13 @@ class TeacherDetailsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            ElevatedButton(
+              onPressed: () {
+                _launchWhatsApp(context, teacher.phoneNumber!);
+              },
+              child: const Text('Chat on WhatsApp'),
+            ),
+            const SizedBox(height: 20),
             Text(
               'Subjects:',
               style: Theme.of(context).textTheme.headlineSmall,
@@ -63,10 +119,9 @@ class TeacherDetailsScreen extends StatelessWidget {
                   ),
                   trailing: ElevatedButton(
                     onPressed: () {
-                      _createEnrollment(subject['subject']);
-                      _launchWhatsApp(context, teacher.phoneNumber!);
+                      _showEnrollmentDialog(context, subject['subject']);
                     },
-                    child: const Text('Contact'),
+                    child: const Text('Request to Enroll'),
                   ),
                 ),
           ],
