@@ -6,11 +6,11 @@ class TeacherProfileSetupScreen extends StatefulWidget {
   const TeacherProfileSetupScreen({Key? key}) : super(key: key);
 
   @override
-  _TeacherProfileSetupScreenState createState() =>
-      _TeacherProfileSetupScreenState();
+  TeacherProfileSetupScreenState createState() =>
+      TeacherProfileSetupScreenState();
 }
 
-class _TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
+class TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
   final List<String> _subjects = [
     'Math',
     'English',
