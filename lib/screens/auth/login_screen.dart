@@ -36,7 +36,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (success) {
-        // Navigate to appropriate dashboard
         switch (authProvider.user!.role) {
           case UserRole.admin:
             Navigator.pushReplacementNamed(context, AppRoutes.adminDashboard);
@@ -45,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Navigator.pushReplacementNamed(context, AppRoutes.teacherDashboard);
             break;
           case UserRole.student:
-            Navigator.pushReplacementNamed(context, AppRoutes.studentDashboard);
+            Navigator.pushReplacementNamed(context, AppRoutes.studentHome);
             break;
         }
       } else {
@@ -59,6 +58,15 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // Go back to splash/welcome page
+            Navigator.pushReplacementNamed(context, AppRoutes.splash);
+          },
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Form(
@@ -116,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   TextButton(
                     onPressed: () {
-                      // Handle forgot password
+                      // Forgot password click
                     },
                     child: const Text('Forgot password'),
                   ),

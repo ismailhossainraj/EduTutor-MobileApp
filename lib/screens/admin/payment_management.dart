@@ -9,24 +9,33 @@ class PaymentManagementScreen extends StatelessWidget {
   final List<Payment> payments = [
     Payment(
       id: 'P001',
-      studentName: 'Alice Smith',
+      studentId: 'S001',
       amount: 120.0,
-      status: 'Paid',
-      date: DateTime(2025, 9, 1),
+      paymentDate: DateTime(2025, 9, 1),
+      status: 'completed',
+      paymentMethod: 'card',
+      transactionId: 'TXN001',
+      createdAt: DateTime(2025, 9, 1),
     ),
     Payment(
       id: 'P002',
-      studentName: 'Bob Johnson',
+      studentId: 'S002',
       amount: 150.0,
-      status: 'Pending',
-      date: DateTime(2025, 9, 3),
+      paymentDate: DateTime(2025, 9, 3),
+      status: 'pending',
+      paymentMethod: 'bank_transfer',
+      transactionId: 'TXN002',
+      createdAt: DateTime(2025, 9, 3),
     ),
     Payment(
       id: 'P003',
-      studentName: 'Carol Lee',
+      studentId: 'S003',
       amount: 100.0,
-      status: 'Failed',
-      date: DateTime(2025, 8, 28),
+      paymentDate: DateTime(2025, 8, 28),
+      status: 'failed',
+      paymentMethod: 'wallet',
+      transactionId: 'TXN003',
+      createdAt: DateTime(2025, 8, 28),
     ),
   ];
 
@@ -55,22 +64,22 @@ class PaymentManagementScreen extends StatelessWidget {
                   return ListTile(
                     leading: Icon(
                       Icons.payment,
-                      color: payment.status == 'Paid'
+                      color: payment.status == 'completed'
                           ? Colors.green
-                          : payment.status == 'Pending'
+                          : payment.status == 'pending'
                               ? Colors.orange
                               : Colors.red,
                     ),
-                    title: Text(payment.studentName),
+                    title: Text(payment.studentId),
                     subtitle: Text(
                         'Amount: \$${payment.amount.toStringAsFixed(2)}\nDate: '
-                        '${payment.date.toLocal().toString().split(' ')[0]}'),
+                        '${payment.paymentDate.toLocal().toString().split(' ')[0]}'),
                     trailing: Text(
                       payment.status,
                       style: TextStyle(
-                        color: payment.status == 'Paid'
+                        color: payment.status == 'completed'
                             ? Colors.green
-                            : payment.status == 'Pending'
+                            : payment.status == 'pending'
                                 ? Colors.orange
                                 : Colors.red,
                         fontWeight: FontWeight.bold,
@@ -86,12 +95,12 @@ class PaymentManagementScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('ID: ${payment.id}'),
-                              Text('Student: ${payment.studentName}'),
+                              Text('Student: ${payment.studentId}'),
                               Text(
                                   'Amount: \$${payment.amount.toStringAsFixed(2)}'),
                               Text('Status: ${payment.status}'),
                               Text(
-                                  'Date: ${payment.date.toLocal().toString().split(' ')[0]}'),
+                                  'Date: ${payment.paymentDate.toLocal().toString().split(' ')[0]}'),
                               const SizedBox(height: 8),
                               Text('Payment Method:',
                                   style:
