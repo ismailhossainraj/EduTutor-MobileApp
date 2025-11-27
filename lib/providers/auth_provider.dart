@@ -3,6 +3,12 @@ import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
+// WARNING: Hard-coded admin credentials are insecure and should only be used
+// for local development or testing. For production, use secure storage,
+// environment variables, or Firebase Auth accounts with proper rules.
+const String kDevAdminEmail = 'admin@gmail.com';
+const String kDevAdminPassword = 'admin123';
+
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   UserModel? _user;
@@ -25,6 +31,20 @@ class AuthProvider with ChangeNotifier {
 
   Future<bool> login(String email, String password) async {
     _setLoading(true);
+    // Quick dev/admin bypass: if credentials match the hard-coded admin
+    // values, create a local admin user model and skip Firebase auth.
+    if (email == kDevAdminEmail && password == kDevAdminPassword) {
+      _user = UserModel(
+        uid: 'admin',
+        email: email,
+        firstName: 'Admin',
+        lastName: 'User',
+        role: UserRole.admin,
+        createdAt: DateTime.now(),
+      );
+      _setLoading(false);
+      return true;
+    }
     try {
       final user = await _authService.loginWithEmailAndPassword(
           email: email, password: password);

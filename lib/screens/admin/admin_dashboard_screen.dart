@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../models/enrollment_model.dart';
+import 'create_class_screen.dart';
+import 'schedule_manager_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -57,6 +59,36 @@ class AdminDashboardScreen extends StatelessWidget {
                   ],
                 );
               },
+            ),
+            const SizedBox(height: 20),
+            // Admin actions
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.add_box),
+                title: const Text('Create Class'),
+                subtitle: const Text('Add a new class / batch'),
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              // lazy import screen
+                              const CreateClassScreen()));
+                },
+              ),
+            ),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.schedule),
+                title: const Text('Class Schedule'),
+                subtitle: const Text('View and manage class schedules'),
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ScheduleManagerScreen()));
+                },
+              ),
             ),
             const SizedBox(height: 20),
             Text(

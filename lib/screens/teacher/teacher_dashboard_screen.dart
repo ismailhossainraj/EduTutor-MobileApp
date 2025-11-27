@@ -50,15 +50,15 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
       appBar: AppBar(
         title: const Text('Teacher Dashboard'),
         actions: [
-          const IconButton(
-            icon: Icon(Icons.home),
+          IconButton(
+            icon: const Icon(Icons.home),
             tooltip: 'Home',
-            onPressed: null,
+            onPressed: () {},
           ),
-          const IconButton(
-            icon: Icon(Icons.notifications),
+          IconButton(
+            icon: const Icon(Icons.notifications),
             tooltip: 'Notifications',
-            onPressed: null,
+            onPressed: () {},
           ),
           IconButton(
             icon: const Icon(Icons.logout),
