@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/schedule_model.dart';
 
@@ -17,6 +19,28 @@ class _ClassScheduleScreenState extends State<ClassScheduleScreen> {
   void initState() {
     super.initState();
     _loadStudentBatch();
+  }
+
+  Future<List<ClassSchedule>> _loadLocalSchedules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList('dev_schedules') ?? <String>[];
+    final List<ClassSchedule> result = [];
+    for (final item in raw) {
+      try {
+        final map = jsonDecode(item) as Map<String, dynamic>;
+        // parse ISO strings back to DateTime
+        if (map['startTime'] is String) {
+          map['startTime'] = DateTime.parse(map['startTime']);
+        }
+        if (map['endTime'] is String) {
+          map['endTime'] = DateTime.parse(map['endTime']);
+        }
+        result.add(ClassSchedule.fromMap(map));
+      } catch (_) {
+        // ignore malformed local entries
+      }
+    }
+    return result;
   }
 
   Future<void> _loadStudentBatch() async {
@@ -56,6 +80,50 @@ class _ClassScheduleScreenState extends State<ClassScheduleScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
+                  final err = snapshot.error.toString();
+                  if (err.contains('permission-denied')) {
+                    // Try to load local dev schedules as a fallback when Firestore
+                    // permissions prevent reading the schedules collection.
+                    return FutureBuilder<List<ClassSchedule>>(
+                      future: _loadLocalSchedules(),
+                      builder: (context, localSnap) {
+                        if (localSnap.connectionState != ConnectionState.done) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+                        final local = localSnap.data ?? [];
+                        if (local.isEmpty) {
+                          return const Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.lock_outline,
+                                    size: 48, color: Colors.red),
+                                SizedBox(height: 8),
+                                Text('Access denied.'),
+                                SizedBox(height: 6),
+                                Text(
+                                    'No local schedules found. Ask admin to publish schedules.'),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
+                          itemCount: local.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final s = local[index];
+                            return ListTile(
+                              title: Text('Batch: ${s.batchName}'),
+                              subtitle: Text(
+                                  'Course: ${s.subject}\nTime: ${s.dayOfWeek} ${s.getFormattedTime()}\nTeacher: ${s.teacherName}'),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  }
                   return Center(child: Text('Error: ${snapshot.error}'));
                 }
                 if (!snapshot.hasData) {

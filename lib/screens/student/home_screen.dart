@@ -282,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildActionButton(
                   context,
                   icon: Icons.schedule,
-                  title: 'Class Schedule',
+                  title: 'View Schedule',
                   subtitle: 'View timetable',
                   onTap: () {
                     Navigator.pushNamed(context, AppRoutes.studentSchedule);
@@ -353,6 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildClassesTab() {
+    final userId = currentUser?.uid ?? '';
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -365,29 +366,99 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 16),
-            _buildClassCard(
-              context,
-              title: 'Mathematics 101',
-              teacher: 'Dr. Smith',
-              schedule: 'Mon, Wed, Fri - 10:00 AM',
-              progress: 75,
+            const SizedBox(height: 12),
+            // Enrolled classes: classes where studentIds array contains current user
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('classes')
+                  .where('studentIds', arrayContains: userId)
+                  .snapshots(),
+              builder: (context, snap) {
+                if (!snap.hasData) {
+                  return const SizedBox.shrink();
+                }
+                final docs = snap.data!.docs;
+                if (docs.isEmpty) {
+                  return const Text('You are not enrolled in any classes yet.');
+                }
+                return Column(
+                  children: docs.map((d) {
+                    final data = d.data() as Map<String, dynamic>;
+                    final title =
+                        data['className'] ?? data['subject'] ?? 'Class';
+                    final teacherList =
+                        (data['teacherIds'] as List?) ?? <dynamic>[];
+                    final teacher = teacherList.isNotEmpty
+                        ? teacherList.first as String
+                        : '';
+                    final schedule = '${data['academicYear'] ?? ''}';
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildClassCard(
+                        context,
+                        title: title,
+                        teacher: teacher,
+                        schedule: schedule,
+                        progress: 0,
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 20),
+            Text(
+              'Available Classes',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 12),
-            _buildClassCard(
-              context,
-              title: 'English Literature',
-              teacher: 'Prof. Johnson',
-              schedule: 'Tue, Thu - 2:00 PM',
-              progress: 85,
-            ),
-            const SizedBox(height: 12),
-            _buildClassCard(
-              context,
-              title: 'Physics Advanced',
-              teacher: 'Dr. Williams',
-              schedule: 'Mon, Wed, Fri - 1:00 PM',
-              progress: 65,
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('classes')
+                  .where('status', isEqualTo: 'active')
+                  .snapshots(),
+              builder: (context, snap) {
+                if (!snap.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final docs = snap.data!.docs;
+                if (docs.isEmpty) {
+                  return const Text('No classes available.');
+                }
+                return Column(
+                  children: docs.map((d) {
+                    final data = d.data() as Map<String, dynamic>;
+                    final id = d.id;
+                    final className = data['className'] ?? '';
+
+                    final capacity = (data['capacity'] as num?)?.toInt() ?? 0;
+                    final studentIds =
+                        List<String>.from(data['studentIds'] ?? []);
+                    final available = capacity - studentIds.length;
+                    final enrolled = studentIds.contains(userId);
+                    return Card(
+                      child: ListTile(
+                        title: Text('$className'),
+                        subtitle: Text(
+                          'Course: ${data['subject'] ?? data['courseName'] ?? data['course'] ?? ''}\nBatch: ${data['batchName'] ?? ''}\nSeats left: $available',
+                        ),
+                        trailing: ElevatedButton(
+                          onPressed: (enrolled ||
+                                  available <= 0 ||
+                                  userId.isEmpty)
+                              ? null
+                              : () =>
+                                  _showEnrollDialog(context, id, data, userId),
+                          child: Text(enrolled ? 'Enrolled' : 'Enroll'),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
             ),
           ],
         ),
@@ -581,6 +652,126 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _showEnrollDialog(BuildContext context, String classId,
+      Map<String, dynamic> classData, String userId) async {
+    final className = classData['className'] ?? classData['subject'] ?? 'Class';
+    final course = classData['subject'] ??
+        classData['courseName'] ??
+        classData['course'] ??
+        '';
+    final batch = classData['batchName'] ?? '';
+    final level = classData['level'] ?? '';
+    final academicYear =
+        classData['academicYear'] ?? classData['session'] ?? '';
+    final semester = classData['semester'] ?? '';
+    final capacity = (classData['capacity'] as num?)?.toInt() ?? 0;
+    final studentIds = List<String>.from(classData['studentIds'] ?? []);
+    final seatsLeft = capacity - studentIds.length;
+    final days =
+        (classData['daysPerWeek'] as List?)?.cast<String>() ?? <String>[];
+    final startTime = classData['startTime'] ?? '';
+    final endTime = classData['endTime'] ?? '';
+    final status = classData['status'] ?? '';
+    final teacherName = classData['teacherName'] ?? '';
+    final teacherId = classData['teacherIds'] != null &&
+            (classData['teacherIds'] as List).isNotEmpty
+        ? (classData['teacherIds'] as List).first
+        : '';
+
+    // show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Enroll in $className'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Course: $course'),
+              const SizedBox(height: 6),
+              Text('Batch: $batch'),
+              const SizedBox(height: 6),
+              Text('Level: $level'),
+              const SizedBox(height: 6),
+              Text(
+                  'Session: $academicYear ${semester.isNotEmpty ? ' • $semester' : ''}'),
+              const SizedBox(height: 6),
+              Text(
+                  'Teacher: ${teacherName.isNotEmpty ? teacherName : teacherId}'),
+              const SizedBox(height: 6),
+              Text('Days: ${days.join(', ')}'),
+              const SizedBox(height: 6),
+              Text(
+                  'Duration: ${startTime.isNotEmpty || endTime.isNotEmpty ? '$startTime - $endTime' : 'N/A'}'),
+              const SizedBox(height: 6),
+              Text('Seats left: $seatsLeft (Capacity: $capacity)'),
+              const SizedBox(height: 6),
+              Text('Status: $status'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Enroll')),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // perform enrollment transaction
+    final db = FirebaseFirestore.instance;
+    final classRef = db.collection('classes').doc(classId);
+    try {
+      await db.runTransaction((tx) async {
+        final snap = await tx.get(classRef);
+        final map = snap.data() as Map<String, dynamic>;
+        final current = List<String>.from(map['studentIds'] ?? []);
+        final cap = (map['capacity'] as num?)?.toInt() ?? 0;
+        if (current.contains(userId)) return;
+        if (current.length >= cap) throw Exception('Class is full');
+        current.add(userId);
+        tx.update(classRef, {'studentIds': current});
+        final enrollRef = db.collection('enrollments').doc();
+        tx.set(enrollRef, {
+          'uid': enrollRef.id,
+          'classId': classId,
+          'className': className,
+          'batchName': batch,
+          'studentId': userId,
+          'teacherId': teacherId,
+          'teacherName': teacherName,
+          'course': course,
+          'capacity': capacity,
+          'level': level,
+          'daysPerWeek': days,
+          'startTime': startTime,
+          'endTime': endTime,
+          'academicYear': academicYear,
+          'semester': semester,
+          'status': 'enrolled',
+          'mode': 'N/A',
+          'createdAt': DateTime.now(),
+        });
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Enrolled successfully')));
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Enrollment failed: ${e.toString()}')));
+      }
+    }
   }
 
   Widget _buildStatCard({

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../../models/enrollment_model.dart';
 import 'create_class_screen.dart';
 import 'schedule_manager_screen.dart';
+import 'class_enrollments_screen.dart';
+import 'user_list_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -46,14 +48,32 @@ class AdminDashboardScreen extends StatelessWidget {
                   children: [
                     Card(
                       child: ListTile(
-                        title: const Text('Total Students'),
+                        title: const Text('All Students'),
                         trailing: Text(studentCount.toString()),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const UserListScreen(
+                                  role: 'student', title: 'All Students'),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     Card(
                       child: ListTile(
-                        title: const Text('Total Teachers'),
+                        title: const Text('All Teachers'),
                         trailing: Text(teacherCount.toString()),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const UserListScreen(
+                                  role: 'teacher', title: 'All Teachers'),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -90,6 +110,19 @@ class AdminDashboardScreen extends StatelessWidget {
                 },
               ),
             ),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.group),
+                title: const Text('Class Enrollments'),
+                subtitle: const Text('View enrolled students per class'),
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ClassEnrollmentsScreen()));
+                },
+              ),
+            ),
             const SizedBox(height: 20),
             Text(
               'All Enrollments',
@@ -115,10 +148,12 @@ class AdminDashboardScreen extends StatelessWidget {
                     itemCount: enrollments.length,
                     itemBuilder: (context, index) {
                       final enrollment = enrollments[index];
+                      final date = enrollment.createdAt;
+                      final dateStr = '${date.month}/${date.day}/${date.year}';
                       return ListTile(
                         title: Text(enrollment.subject),
                         subtitle: Text(
-                            'Student: ${enrollment.studentId} - Teacher: ${enrollment.teacherId}'),
+                            'Status: ${enrollment.status} • Date: $dateStr'),
                         trailing: Text(enrollment.status),
                       );
                     },

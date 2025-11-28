@@ -42,11 +42,12 @@ class ScheduleManagerScreen extends StatelessWidget {
               final schedule =
                   ClassSchedule.fromMap({...data, 'id': docs[index].id});
               return ListTile(
-                title: Text('${schedule.subject} — ${schedule.batchName}'),
+                title: Text('Batch: ${schedule.batchName}'),
                 subtitle: Text(
-                    '${schedule.dayOfWeek} • ${schedule.getFormattedTime()} • ${schedule.teacherName}'),
-                trailing: IconButton(
+                    'Course: ${schedule.subject}\nTime: ${schedule.dayOfWeek} ${schedule.getFormattedTime()}\nTeacher: ${schedule.teacherName}'),
+                trailing: TextButton.icon(
                   icon: const Icon(Icons.edit),
+                  label: const Text('Update'),
                   onPressed: () {
                     Navigator.push(
                         context,
@@ -56,13 +57,12 @@ class ScheduleManagerScreen extends StatelessWidget {
                   },
                 ),
                 onTap: () {
-                  // maybe show details
                   showDialog(
                       context: context,
                       builder: (_) => AlertDialog(
-                            title: Text(schedule.subject),
+                            title: const Text('Schedule Details'),
                             content: Text(
-                                'Batch: ${schedule.batchName}\nTeacher: ${schedule.teacherName}\nRoom: ${schedule.roomNumber}\nTime: ${schedule.getFormattedTime()}'),
+                                'Batch: ${schedule.batchName}\nCourse: ${schedule.subject}\nTeacher: ${schedule.teacherName}\nTime: ${schedule.dayOfWeek} ${schedule.getFormattedTime()}'),
                             actions: [
                               TextButton(
                                   onPressed: () => Navigator.pop(context),
@@ -75,11 +75,12 @@ class ScheduleManagerScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const CreateScheduleScreen())),
+        label: const Text('Create Schedule'),
+        icon: const Icon(Icons.add),
         tooltip: 'Create Schedule',
-        child: const Icon(Icons.add),
       ),
     );
   }

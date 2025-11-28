@@ -13,11 +13,15 @@ class CreateClassScreen extends StatefulWidget {
 class _CreateClassScreenState extends State<CreateClassScreen> {
   final _formKey = GlobalKey<FormState>();
   final _className = TextEditingController();
-  final _subject = TextEditingController();
+  final _batch = TextEditingController();
+  final _courseName = TextEditingController();
   final _capacity = TextEditingController(text: '30');
   String _level = 'secondary';
-  final _academicYear = TextEditingController();
-  final _semester = TextEditingController();
+  final _teacherName = TextEditingController();
+  final Set<String> _daysSelected = <String>{};
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
+  final _session = TextEditingController();
   String _status = 'active';
 
   @override
@@ -26,11 +30,11 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     if (widget.existing != null) {
       final e = widget.existing!;
       _className.text = e.className;
-      _subject.text = e.subject;
+      _courseName.text = e.subject;
       _capacity.text = e.capacity.toString();
       _level = e.level;
-      _academicYear.text = e.academicYear;
-      _semester.text = e.semester;
+      _teacherName.text = e.teacherIds.isNotEmpty ? (e.teacherIds.first) : '';
+      _session.text = e.academicYear;
       _status = e.status;
     }
   }
@@ -38,10 +42,11 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
   @override
   void dispose() {
     _className.dispose();
-    _subject.dispose();
+    _batch.dispose();
+    _courseName.dispose();
     _capacity.dispose();
-    _academicYear.dispose();
-    _semester.dispose();
+    _teacherName.dispose();
+    _session.dispose();
     super.dispose();
   }
 
@@ -51,15 +56,23 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
     final cap = int.tryParse(_capacity.text) ?? 0;
     final map = {
       'className': _className.text.trim(),
-      'subject': _subject.text.trim(),
+      'batchName': _batch.text.trim(),
+      'courseName': _courseName.text.trim(),
       'capacity': cap,
       'level': _level,
+      'teacherName': _teacherName.text.trim(),
+      'daysPerWeek': _daysSelected.toList(),
+      'startTime': _startTime != null
+          ? '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}'
+          : null,
+      'endTime': _endTime != null
+          ? '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}'
+          : null,
       'createdAt': DateTime.now(),
       'studentIds': <String>[],
       'teacherIds': <String>[],
       'status': _status,
-      'academicYear': _academicYear.text.trim(),
-      'semester': _semester.text.trim(),
+      'session': _session.text.trim(),
     };
 
     final col = FirebaseFirestore.instance.collection('classes');
@@ -91,8 +104,19 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
               ),
               const SizedBox(height: 8),
               TextFormField(
-                controller: _subject,
-                decoration: const InputDecoration(labelText: 'Subject'),
+                controller: _batch,
+                decoration: const InputDecoration(labelText: 'Batch'),
+                validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _courseName,
+                decoration: const InputDecoration(labelText: 'Course Name'),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _teacherName,
+                decoration: const InputDecoration(labelText: 'Teacher Name'),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -106,21 +130,74 @@ class _CreateClassScreenState extends State<CreateClassScreen> {
                 initialValue: _level,
                 decoration: const InputDecoration(labelText: 'Level'),
                 items: [
-                  'primary',
-                  'secondary',
-                  'senior_secondary',
-                ].map((l) => DropdownMenuItem(value: l, child: Text(l))).toList(),
+                  {'label': 'Secondary', 'value': 'secondary'},
+                  {'label': 'Higher Secondary', 'value': 'higher_secondary'},
+                  {'label': 'Other', 'value': 'other'},
+                ]
+                    .map((l) => DropdownMenuItem(
+                        value: l['value'], child: Text(l['label']!)))
+                    .toList(),
                 onChanged: (v) => setState(() => _level = v ?? _level),
               ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _academicYear,
-                decoration: const InputDecoration(labelText: 'Academic Year'),
+              const SizedBox(height: 12),
+              const Text("Days per Week",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Wrap(
+                spacing: 8,
+                children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                    .map((d) => FilterChip(
+                          label: Text(d),
+                          selected: _daysSelected.contains(d),
+                          onSelected: (sel) => setState(() {
+                            if (sel) {
+                              _daysSelected.add(d);
+                            } else {
+                              _daysSelected.remove(d);
+                            }
+                          }),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 12),
+              const Text("Duration",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final t = await showTimePicker(
+                            context: context,
+                            initialTime: _startTime ??
+                                const TimeOfDay(hour: 9, minute: 0));
+                        if (t != null) setState(() => _startTime = t);
+                      },
+                      child: Text(_startTime == null
+                          ? 'Start Time'
+                          : _startTime!.format(context)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final t = await showTimePicker(
+                            context: context,
+                            initialTime: _endTime ??
+                                const TimeOfDay(hour: 10, minute: 0));
+                        if (t != null) setState(() => _endTime = t);
+                      },
+                      child: Text(_endTime == null
+                          ? 'End Time'
+                          : _endTime!.format(context)),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               TextFormField(
-                controller: _semester,
-                decoration: const InputDecoration(labelText: 'Semester'),
+                controller: _session,
+                decoration: const InputDecoration(labelText: 'Session'),
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
