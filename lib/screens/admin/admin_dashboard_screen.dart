@@ -2,10 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../models/enrollment_model.dart';
+import 'user_list_screen.dart';
+import 'manage_tuition_screen.dart';
 import 'create_class_screen.dart';
 import 'schedule_manager_screen.dart';
 import 'class_enrollments_screen.dart';
-import 'user_list_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
@@ -55,7 +56,9 @@ class AdminDashboardScreen extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (_) => const UserListScreen(
-                                  role: 'student', title: 'All Students'),
+                                role: 'student',
+                                title: 'All Students',
+                              ),
                             ),
                           );
                         },
@@ -70,8 +73,23 @@ class AdminDashboardScreen extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (_) => const UserListScreen(
-                                  role: 'teacher', title: 'All Teachers'),
+                                role: 'teacher',
+                                title: 'All Teachers',
+                              ),
                             ),
+                          );
+                        },
+                      ),
+                    ),
+                    Card(
+                      child: ListTile(
+                        title: const Text('Manage Tuition'),
+                        leading: const Icon(Icons.manage_accounts),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const ManageTuitionScreen()),
                           );
                         },
                       ),

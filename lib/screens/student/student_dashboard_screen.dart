@@ -2,8 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../models/enrollment_model.dart';
+import '../../models/tuition_model.dart';
 import '../../routes/app_routes.dart';
 import 'student_search_screen.dart';
+import 'search_tutor_screen.dart';
 
 class StudentDashboardScreen extends StatefulWidget {
   const StudentDashboardScreen({Key? key}) : super(key: key);
@@ -24,6 +26,18 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         title: const Text('Student Dashboard'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Search Tutor',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SearchTutorScreen(),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
@@ -33,9 +47,34 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           ),
         ],
       ),
-      body: _selectedIndex == 0
-          ? _buildEnrollmentsView(context, user)
-          : _buildModulesView(context),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SearchTutorScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.search),
+                label: const Text('Search Tutor'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: _selectedIndex == 0
+                ? _buildEnrollmentsView(context, user)
+                : _buildModulesView(context),
+          ),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
@@ -54,6 +93,17 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SearchTutorScreen()),
+          );
+        },
+        icon: const Icon(Icons.search),
+        label: const Text('Search Tutor'),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -62,16 +112,32 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       padding: const EdgeInsets.all(20.0),
       child: Column(
         children: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const StudentSearchScreen(),
-                ),
-              );
-            },
-            child: const Text('Search for Teachers'),
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const StudentSearchScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Search for Teachers'),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SearchTutorScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Search Tutor'),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           Text(
@@ -153,6 +219,213 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               },
             ),
           ),
+          const SizedBox(height: 20),
+          Text(
+            'Search Tutor',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('tuitions')
+                  .where('status', whereIn: ['open', 'selected']).snapshots(),
+              builder: (context, snap) {
+                if (!snap.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final items = snap.data!.docs
+                    .map((d) =>
+                        TuitionModel.fromMap(d.data() as Map<String, dynamic>))
+                    .toList();
+                if (items.isEmpty) {
+                  return const Center(child: Text('No tutors found'));
+                }
+                return ListView.builder(
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final t = items[index];
+                    return Card(
+                      child: ListTile(
+                        title: Text(t.name),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Subject: ${t.interestedSubject}'),
+                            Text('Days: ${t.days.join(', ')}'),
+                            Text('Time: ${t.startTime} - ${t.endTime}'),
+                            Text('Salary: ${t.salary}'),
+                            Text('Status: ${t.status}'),
+                          ],
+                        ),
+                        trailing: FutureBuilder<DocumentSnapshot>(
+                          future: FirebaseFirestore.instance
+                              .collection('tuition_selections')
+                              .doc('${t.uid}_${user?.uid}')
+                              .get(),
+                          builder: (context, selSnap) {
+                            final exists =
+                                selSnap.hasData && selSnap.data!.exists;
+                            if (exists || t.status == 'selected') {
+                              return const Text('Selected');
+                            }
+                            final canSelect =
+                                t.status == 'open' && user != null;
+                            return ElevatedButton(
+                              onPressed: canSelect
+                                  ? () async {
+                                      final studentUid = user.uid;
+                                      final selDocId = '${t.uid}_$studentUid';
+                                      final tuitionRef = FirebaseFirestore
+                                          .instance
+                                          .collection('tuitions')
+                                          .doc(t.uid);
+                                      final selRef = FirebaseFirestore.instance
+                                          .collection('tuition_selections')
+                                          .doc(selDocId);
+                                      try {
+                                        await FirebaseFirestore.instance
+                                            .runTransaction((tx) async {
+                                          final tuitionSnap =
+                                              await tx.get(tuitionRef);
+                                          final currentStatus =
+                                              tuitionSnap.exists
+                                                  ? (tuitionSnap.data() as Map<
+                                                      String,
+                                                      dynamic>)['status']
+                                                  : null;
+                                          if (currentStatus != 'open') {
+                                            throw Exception(
+                                                'Tuition no longer available');
+                                          }
+                                          tx.set(selRef, {
+                                            'uid': selRef.id,
+                                            'tuitionId': t.uid,
+                                            'studentId': studentUid,
+                                            'teacherId': t.teacherId,
+                                            'createdAt': DateTime.now(),
+                                            'status': 'selected',
+                                          });
+                                          tx.update(tuitionRef,
+                                              {'status': 'selected'});
+                                        });
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                                content:
+                                                    Text('Tutor selected')));
+                                        setState(() {});
+                                      } catch (e) {
+                                        if (!mounted) return;
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(SnackBar(
+                                                content: Text(e.toString())));
+                                      }
+                                    }
+                                  : null,
+                              child: const Text('Select'),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Selected Tutors',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('tuition_selections')
+                  .where('studentId', isEqualTo: user?.uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final sels = snapshot.data!.docs;
+                if (sels.isEmpty) {
+                  return const Center(child: Text('No selected tutors'));
+                }
+                return ListView.builder(
+                  itemCount: sels.length,
+                  itemBuilder: (context, index) {
+                    final s = sels[index].data() as Map<String, dynamic>;
+                    final tuitionId = s['tuitionId'] ?? '';
+                    final teacherId = s['teacherId'] ?? '';
+                    return FutureBuilder<List<DocumentSnapshot>>(
+                      future: Future.wait([
+                        FirebaseFirestore.instance
+                            .collection('tuitions')
+                            .doc(tuitionId)
+                            .get(),
+                        FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(teacherId)
+                            .get(),
+                      ]),
+                      builder: (context, snap) {
+                        if (!snap.hasData) {
+                          return const ListTile(title: Text('Loading...'));
+                        }
+                        final tuitionDoc = snap.data![0];
+                        final teacherDoc = snap.data![1];
+                        final tuition = tuitionDoc.exists
+                            ? tuitionDoc.data() as Map<String, dynamic>
+                            : null;
+                        final teacher = teacherDoc.exists
+                            ? teacherDoc.data() as Map<String, dynamic>
+                            : null;
+                        final teacherName = teacher != null
+                            ? '${teacher['firstName'] ?? ''} ${teacher['lastName'] ?? ''}'
+                            : teacherId;
+                        return ListTile(
+                          title: Text(tuition != null
+                              ? (tuition['interestedSubject'] ?? 'Tuition')
+                              : 'Tuition'),
+                          subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('Teacher: $teacherName'),
+                                if (tuition != null)
+                                  Text(
+                                      'Time: ${tuition['startTime'] ?? ''} - ${tuition['endTime'] ?? ''}'),
+                                if (tuition != null)
+                                  Text(
+                                      'Days: ${List<String>.from(tuition['days'] ?? []).join(', ')}'),
+                              ]),
+                          trailing: ElevatedButton(
+                            onPressed: () async {
+                              // remove selection and set tuition back to open
+                              final selDocId = sels[index].id;
+                              await FirebaseFirestore.instance
+                                  .collection('tuition_selections')
+                                  .doc(selDocId)
+                                  .delete();
+                              await FirebaseFirestore.instance
+                                  .collection('tuitions')
+                                  .doc(tuitionId)
+                                  .update({'status': 'open'});
+                            },
+                            child: const Text('Unselect'),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -168,6 +441,20 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               'Student Modules',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
+            const SizedBox(height: 12),
+            // Add Search Tutor module card for easy access
+            _buildModuleCard(
+              context,
+              'Search Tutor',
+              'Find tutors posted by teachers',
+              Icons.search,
+              Colors.indigo,
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SearchTutorScreen()),
+              ),
+            ),
+            const SizedBox(height: 20),
             const SizedBox(height: 20),
             // Payment Section
             _buildSectionHeader(context, 'Payment Management'),

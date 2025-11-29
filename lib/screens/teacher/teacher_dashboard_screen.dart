@@ -5,6 +5,7 @@ import '../../models/enrollment_model.dart';
 import '../../routes/app_routes.dart';
 import '../../services/teacher_data_service.dart';
 import '_dashboard_widgets.dart';
+import 'tuition_needed_screen.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
   const TeacherDashboardScreen({Key? key}) : super(key: key);
@@ -223,6 +224,18 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content: Text('Profile feature coming soon!')),
+                          );
+                        },
+                      ),
+                      QuickActionButton(
+                        icon: Icons.school,
+                        label: 'Tuition Needed',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const TuitionNeededScreen(),
+                            ),
                           );
                         },
                       ),
