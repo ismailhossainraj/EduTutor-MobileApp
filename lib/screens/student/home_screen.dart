@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../models/user_model.dart';
 import '../../routes/app_routes.dart';
+import 'search_tutor_screen.dart';
+import '../teacher/tuition_needed_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -262,20 +264,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildActionButton(
                   context,
                   icon: Icons.assessment,
-                  title: 'View Results',
-                  subtitle: 'Check exam results',
+                  title: 'Tuition Wanted',
+                  subtitle: 'Post a tuition request',
                   onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.studentResults);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TuitionNeededScreen(),
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(height: 12),
                 _buildActionButton(
                   context,
-                  icon: Icons.trending_up,
-                  title: 'Progress Report',
-                  subtitle: 'Track your progress',
+                  icon: Icons.search,
+                  title: 'Find Tuition',
+                  subtitle: 'Find tutors posted by teachers',
                   onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.studentProgress);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SearchTutorScreen()),
+                    );
                   },
                 ),
                 const SizedBox(height: 12),

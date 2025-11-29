@@ -5,7 +5,7 @@ import '../../models/enrollment_model.dart';
 import '../../models/tuition_model.dart';
 import '../../routes/app_routes.dart';
 import 'student_search_screen.dart';
-import 'search_tutor_screen.dart';
+import '../teacher/tuition_needed_screen.dart';
 
 class StudentDashboardScreen extends StatefulWidget {
   const StudentDashboardScreen({Key? key}) : super(key: key);
@@ -27,14 +27,11 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            tooltip: 'Search Tutor',
+            tooltip: 'Find Tuition',
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SearchTutorScreen(),
-                ),
-              );
+              setState(() {
+                _selectedIndex = 2;
+              });
             },
           ),
           IconButton(
@@ -55,15 +52,12 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SearchTutorScreen(),
-                    ),
-                  );
+                  setState(() {
+                    _selectedIndex = 2;
+                  });
                 },
                 icon: const Icon(Icons.search),
-                label: const Text('Search Tutor'),
+                label: const Text('Find Tuition'),
               ),
             ),
           ),
@@ -71,13 +65,16 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           Expanded(
             child: _selectedIndex == 0
                 ? _buildEnrollmentsView(context, user)
-                : _buildModulesView(context),
+                : _selectedIndex == 1
+                    ? _buildModulesView(context)
+                    : _buildFindTuitionView(context, user),
           ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
+          // Switch tabs for all indices so Find Tuition is an integrated tab.
           setState(() {
             _selectedIndex = index;
           });
@@ -91,19 +88,271 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             icon: Icon(Icons.dashboard),
             label: 'Modules',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'Find Tuition',
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const SearchTutorScreen()),
-          );
+          setState(() {
+            _selectedIndex = 2;
+          });
         },
         icon: const Icon(Icons.search),
-        label: const Text('Search Tutor'),
+        label: const Text('Find Tuition'),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  Widget _buildFindTuitionView(BuildContext context, User? user) {
+    // Build two sections: Selected (student's picks) and Available (open posts)
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Selected Tuitions',
+                style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 8),
+
+            // Stream the student's selections first and capture selected IDs
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('tuition_selections')
+                  .where('studentId', isEqualTo: user?.uid)
+                  .snapshots(),
+              builder: (context, selSnap) {
+                if (!selSnap.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final sels = selSnap.data!.docs;
+
+                if (sels.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text('You have not selected any tuition yet.'),
+                  );
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: sels.length,
+                  itemBuilder: (context, i) {
+                    final sDoc = sels[i];
+                    final s = sDoc.data() as Map<String, dynamic>;
+                    final tuitionId = s['tuitionId'] ?? '';
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('tuitions')
+                          .doc(tuitionId)
+                          .get(),
+                      builder: (context, tSnap) {
+                        if (!tSnap.hasData) {
+                          return const ListTile(title: Text('Loading...'));
+                        }
+                        final tuitionDoc = tSnap.data!;
+                        final tuition = tuitionDoc.exists
+                            ? tuitionDoc.data() as Map<String, dynamic>
+                            : null;
+                        return ListTile(
+                          title: Text(tuition != null
+                              ? (tuition['interestedSubject'] ?? 'Tuition')
+                              : 'Tuition'),
+                          subtitle: tuition != null
+                              ? Text(
+                                  'Time: ${tuition['startTime'] ?? ''} • Days: ${List<String>.from(tuition['days'] ?? []).join(', ')}')
+                              : null,
+                          trailing: ElevatedButton(
+                            onPressed: () async {
+                              // remove selection and set tuition back to open
+                              final selDocId = sDoc.id;
+                              await FirebaseFirestore.instance
+                                  .collection('tuition_selections')
+                                  .doc(selDocId)
+                                  .delete();
+                              if (tuitionId.isNotEmpty) {
+                                await FirebaseFirestore.instance
+                                    .collection('tuitions')
+                                    .doc(tuitionId)
+                                    .update({'status': 'open'});
+                              }
+                            },
+                            child: const Text('Unselect'),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+
+            const Divider(height: 24),
+            Text('Available Tuitions',
+                style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 8),
+
+            // Available tuitions: only those that are open (and therefore selectable)
+            // Filter out tuitions posted by students so student's own posts
+            // don't appear in the Find Tuition list.
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('tuitions')
+                  .where('status', isEqualTo: 'open')
+                  .snapshots(),
+              builder: (context, snap) {
+                if (!snap.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                // client-side filter: exclude student-posted tuitions
+                final rawDocs = snap.data!.docs;
+                final filtered = rawDocs.where((d) {
+                  final m = d.data() as Map<String, dynamic>;
+                  final posterRole =
+                      (m['posterRole'] ?? '').toString().toLowerCase();
+                  final posterId = (m['posterId'] ?? '').toString();
+                  // exclude posts explicitly marked as posted by students
+                  if (posterRole == 'student') {
+                    return false;
+                  }
+                  // exclude posts created by the current student
+                  if (user != null && posterId == user.uid) {
+                    return false;
+                  }
+                  return true;
+                }).toList();
+
+                final items = filtered
+                    .map((d) =>
+                        TuitionModel.fromMap(d.data() as Map<String, dynamic>))
+                    .toList();
+
+                if (items.isEmpty) {
+                  return const Text('No available tuition posts');
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final t = items[index];
+                    return Card(
+                      child: ListTile(
+                        title: Text(t.name),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Subject: ${t.interestedSubject}'),
+                            Text('Days: ${t.days.join(', ')}'),
+                            Text('Time: ${t.startTime} - ${t.endTime}'),
+                            Text('Salary: ${t.salary}'),
+                          ],
+                        ),
+                        trailing: ElevatedButton(
+                          onPressed: user == null
+                              ? null
+                              : () async {
+                                  final studentUid = user.uid;
+                                  final selDocId = '${t.uid}_$studentUid';
+                                  final tuitionRef = FirebaseFirestore.instance
+                                      .collection('tuitions')
+                                      .doc(t.uid);
+                                  final selRef = FirebaseFirestore.instance
+                                      .collection('tuition_selections')
+                                      .doc(selDocId);
+                                  try {
+                                    await FirebaseFirestore.instance
+                                        .runTransaction((tx) async {
+                                      final tuitionSnap =
+                                          await tx.get(tuitionRef);
+                                      final currentStatus = tuitionSnap.exists
+                                          ? (tuitionSnap.data()
+                                              as Map<String, dynamic>)['status']
+                                          : null;
+                                      if (currentStatus != 'open') {
+                                        throw Exception(
+                                            'Tuition no longer available');
+                                      }
+
+                                      // Read student profile inside the transaction to capture name/email
+                                      final userRef = FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(studentUid);
+                                      final studentSnap = await tx.get(userRef);
+                                      final studentData = studentSnap.exists
+                                          ? studentSnap.data()
+                                              as Map<String, dynamic>
+                                          : null;
+                                      final studentName = studentData != null
+                                          ? '${studentData['firstName'] ?? ''} ${studentData['lastName'] ?? ''}'
+                                              .trim()
+                                          : studentUid;
+                                      final studentEmail = studentData != null
+                                          ? (studentData['email'] ?? '')
+                                          : '';
+
+                                      final tuitionData = tuitionSnap.exists
+                                          ? tuitionSnap.data()
+                                              as Map<String, dynamic>
+                                          : <String, dynamic>{};
+
+                                      tx.set(selRef, {
+                                        'uid': selRef.id,
+                                        'tuitionId': t.uid,
+                                        'studentId': studentUid,
+                                        'teacherId': t.teacherId,
+                                        // duplicate some student and tuition summary fields for easier teacher reads
+                                        'studentName': studentName,
+                                        'studentEmail': studentEmail,
+                                        'subject':
+                                            tuitionData['interestedSubject'] ??
+                                                '',
+                                        'days': tuitionData['days'] ?? [],
+                                        'startTime':
+                                            tuitionData['startTime'] ?? '',
+                                        'endTime': tuitionData['endTime'] ?? '',
+                                        'createdAt':
+                                            FieldValue.serverTimestamp(),
+                                        'status': 'selected',
+                                      });
+                                      tx.update(
+                                          tuitionRef, {'status': 'selected'});
+                                    });
+                                    if (!mounted) {
+                                      return;
+                                    }
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                            content: Text('Tutor selected')));
+                                    setState(() {});
+                                  } catch (e) {
+                                    if (!mounted) {
+                                      return;
+                                    }
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(e.toString())));
+                                  }
+                                },
+                          child: const Text('Select'),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -128,14 +377,11 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SearchTutorScreen(),
-                    ),
-                  );
+                  setState(() {
+                    _selectedIndex = 2;
+                  });
                 },
-                child: const Text('Search Tutor'),
+                child: const Text('Find Tuition'),
               ),
             ],
           ),
@@ -221,7 +467,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Search Tutor',
+            'Available Tuition',
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 10),
@@ -234,7 +480,20 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 if (!snap.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                final items = snap.data!.docs
+
+                // filter out student-posted tuitions (including current student's posts)
+                final raw = snap.data!.docs;
+                final filtered = raw.where((d) {
+                  final m = d.data() as Map<String, dynamic>;
+                  final posterRole =
+                      (m['posterRole'] ?? '').toString().toLowerCase();
+                  final posterId = (m['posterId'] ?? '').toString();
+                  if (posterRole == 'student') return false;
+                  if (user != null && posterId == user.uid) return false;
+                  return true;
+                }).toList();
+
+                final items = filtered
                     .map((d) =>
                         TuitionModel.fromMap(d.data() as Map<String, dynamic>))
                     .toList();
@@ -299,12 +558,50 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                                             throw Exception(
                                                 'Tuition no longer available');
                                           }
+
+                                          // Read student profile inside the transaction
+                                          final userRef = FirebaseFirestore
+                                              .instance
+                                              .collection('users')
+                                              .doc(studentUid);
+                                          final studentSnap =
+                                              await tx.get(userRef);
+                                          final studentData = studentSnap.exists
+                                              ? studentSnap.data()
+                                                  as Map<String, dynamic>
+                                              : null;
+                                          final studentName = studentData !=
+                                                  null
+                                              ? '${studentData['firstName'] ?? ''} ${studentData['lastName'] ?? ''}'
+                                                  .trim()
+                                              : studentUid;
+                                          final studentEmail =
+                                              studentData != null
+                                                  ? (studentData['email'] ?? '')
+                                                  : '';
+
+                                          final tuitionData = tuitionSnap.exists
+                                              ? tuitionSnap.data()
+                                                  as Map<String, dynamic>
+                                              : <String, dynamic>{};
+
                                           tx.set(selRef, {
                                             'uid': selRef.id,
                                             'tuitionId': t.uid,
                                             'studentId': studentUid,
                                             'teacherId': t.teacherId,
-                                            'createdAt': DateTime.now(),
+                                            'studentName': studentName,
+                                            'studentEmail': studentEmail,
+                                            'subject': tuitionData[
+                                                    'interestedSubject'] ??
+                                                '',
+                                            'days': tuitionData['days'] ?? [],
+                                            'startTime':
+                                                tuitionData['startTime'] ?? '',
+                                            'endTime':
+                                                tuitionData['endTime'] ?? '',
+                                            'createdAt':
+                                                FieldValue.serverTimestamp(),
                                             'status': 'selected',
                                           });
                                           tx.update(tuitionRef,
@@ -442,17 +739,66 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 12),
-            // Add Search Tutor module card for easy access
+            // Quick Actions (small cards)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Quick Actions',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _quickAction(context, Icons.payment, 'Make Payment', () {
+                  Navigator.pushNamed(context, AppRoutes.studentPayments);
+                }),
+                _quickAction(context, Icons.assessment, 'Tuition Wanted', () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TuitionNeededScreen(),
+                    ),
+                  );
+                }),
+                _quickAction(context, Icons.trending_up, 'Find Tuition', () {
+                  setState(() {
+                    _selectedIndex = 2;
+                  });
+                }),
+                _quickAction(context, Icons.schedule, 'View Schedule', () {
+                  Navigator.pushNamed(context, AppRoutes.studentSchedule);
+                }),
+                _quickAction(context, Icons.post_add, 'Tuition Wanted', () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TuitionNeededScreen(),
+                    ),
+                  );
+                }),
+                _quickAction(context, Icons.search, 'Find Tuition', () {
+                  // switch to Find Tuition tab
+                  setState(() {
+                    _selectedIndex = 2;
+                  });
+                }),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            // Add Available Tuition module card for easy access
             _buildModuleCard(
               context,
-              'Search Tutor',
+              'Available Tuition',
               'Find tutors posted by teachers',
               Icons.search,
               Colors.indigo,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SearchTutorScreen()),
-              ),
+              () => setState(() {
+                _selectedIndex = 2;
+              }),
             ),
             const SizedBox(height: 20),
             const SizedBox(height: 20),
@@ -614,6 +960,38 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                   ),
                 ),
                 Icon(Icons.arrow_forward, color: color),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _quickAction(
+      BuildContext context, IconData icon, String label, VoidCallback onTap) {
+    return SizedBox(
+      width: 160,
+      child: Card(
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: Colors.blue),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(label,
+                      style: Theme.of(context).textTheme.bodyMedium),
+                ),
               ],
             ),
           ),

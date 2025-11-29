@@ -26,7 +26,22 @@ class _SearchTutorScreenState extends State<SearchTutorScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final items = snapshot.data!.docs
+          // Filter out tuitions posted by students so student views don't show them
+          final raw = snapshot.data!.docs;
+          final filtered = raw.where((d) {
+            final m = d.data() as Map<String, dynamic>;
+            final posterRole = (m['posterRole'] ?? '').toString().toLowerCase();
+            final posterId = (m['posterId'] ?? '').toString();
+            if (posterRole == 'student') {
+              return false;
+            }
+            if (user != null && posterId == user!.uid) {
+              return false;
+            }
+            return true;
+          }).toList();
+
+          final items = filtered
               .map(
                   (d) => TuitionModel.fromMap(d.data() as Map<String, dynamic>))
               .toList();
@@ -96,12 +111,44 @@ class _SearchTutorScreenState extends State<SearchTutorScreen> {
                                       throw Exception(
                                           'Tuition no longer available');
                                     }
+
+                                    // Read the student profile inside transaction
+                                    final userRef = FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(studentUid);
+                                    final studentSnap = await tx.get(userRef);
+                                    final studentData = studentSnap.exists
+                                        ? studentSnap.data()
+                                            as Map<String, dynamic>
+                                        : null;
+                                    final studentName = studentData != null
+                                        ? '${studentData['firstName'] ?? ''} ${studentData['lastName'] ?? ''}'
+                                            .trim()
+                                        : studentUid;
+                                    final studentEmail = studentData != null
+                                        ? (studentData['email'] ?? '')
+                                        : '';
+
+                                    final tuitionData = tuitionSnap.exists
+                                        ? tuitionSnap.data()
+                                            as Map<String, dynamic>
+                                        : <String, dynamic>{};
+
                                     tx.set(selRef, {
                                       'uid': selRef.id,
                                       'tuitionId': t.uid,
                                       'studentId': studentUid,
                                       'teacherId': t.teacherId,
-                                      'createdAt': DateTime.now(),
+                                      'studentName': studentName,
+                                      'studentEmail': studentEmail,
+                                      'subject':
+                                          tuitionData['interestedSubject'] ??
+                                              '',
+                                      'days': tuitionData['days'] ?? [],
+                                      'startTime':
+                                          tuitionData['startTime'] ?? '',
+                                      'endTime': tuitionData['endTime'] ?? '',
+                                      'createdAt': FieldValue.serverTimestamp(),
                                       'status': 'selected',
                                     });
                                     tx.update(

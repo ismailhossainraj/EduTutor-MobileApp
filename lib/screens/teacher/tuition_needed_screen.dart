@@ -60,9 +60,32 @@ class _TuitionNeededScreenState extends State<TuitionNeededScreen> {
     if (!_formKey.currentState!.validate()) return;
     final user = FirebaseAuth.instance.currentUser;
     final tRef = FirebaseFirestore.instance.collection('tuitions').doc();
+
+    // determine poster role from users collection so student posts are marked
+    String posterRole = 'teacher';
+    String posterId = user?.uid ?? '';
+    try {
+      if (user != null) {
+        final uDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (uDoc.exists) {
+          final u = uDoc.data() as Map<String, dynamic>;
+          posterRole = (u['role'] ?? 'teacher').toString();
+        }
+      }
+    } catch (_) {
+      // ignore and default to teacher
+    }
+
+    // If a student posts, we don't populate teacherId. Teachers posting keep teacherId.
+    final teacherId =
+        posterRole.toLowerCase() == 'teacher' ? (user?.uid ?? '') : '';
+
     final tuition = TuitionModel(
       uid: tRef.id,
-      teacherId: user?.uid ?? '',
+      teacherId: teacherId,
       name: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       phone: _phoneCtrl.text.trim(),
@@ -75,7 +98,12 @@ class _TuitionNeededScreenState extends State<TuitionNeededScreen> {
       status: 'open',
       createdAt: DateTime.now(),
     );
-    await tRef.set(tuition.toMap());
+
+    // write tuition document and include poster metadata for student-posted requests
+    final data = tuition.toMap();
+    data['posterRole'] = posterRole.toLowerCase();
+    data['posterId'] = posterId;
+    await tRef.set(data);
     if (!mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('Tuition posted')));
@@ -111,8 +139,7 @@ class _TuitionNeededScreenState extends State<TuitionNeededScreen> {
                         v == null || v.isEmpty ? 'Enter phone' : null),
                 TextFormField(
                     controller: _qualificationCtrl,
-                    decoration:
-                        const InputDecoration(labelText: 'Qualification')),
+                    decoration: const InputDecoration(labelText: 'Class')),
                 TextFormField(
                     controller: _subjectCtrl,
                     decoration:

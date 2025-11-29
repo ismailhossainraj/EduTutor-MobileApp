@@ -1,8 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../models/user_model.dart';
-import '../../providers/auth_provider.dart';
+// removed unused provider import and auth provider since search/filter removed
 import '../teacher/teacher_details_screen.dart';
 
 class StudentSearchScreen extends StatefulWidget {
@@ -13,13 +12,9 @@ class StudentSearchScreen extends StatefulWidget {
 }
 
 class StudentSearchScreenState extends State<StudentSearchScreen> {
-  final _searchController = TextEditingController();
-  String _searchQuery = '';
-
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final student = authProvider.user;
+    // no auth-specific filtering needed for this list
 
     return Scaffold(
       appBar: AppBar(
@@ -29,51 +24,22 @@ class StudentSearchScreenState extends State<StudentSearchScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: 'Search by subject',
-                suffixIcon: Icon(Icons.search),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-            ),
-            const SizedBox(height: 20),
+            // 'Search by subject' removed per request. Showing all teachers.
+            const SizedBox(height: 8),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('users')
                     .where('role', isEqualTo: 'teacher')
-                    .where('searchableSubjects', arrayContains: _searchQuery)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
-
                   final teachers = snapshot.data!.docs
-                      .map((doc) => UserModel.fromMap(
-                          doc.data() as Map<String, dynamic>))
-                      .where((teacher) {
-                    if (_searchQuery.isEmpty) {
-                      return true;
-                    }
-                    return teacher.subjects?.any((subject) {
-                      final subjectMatches = subject['subject']
-                          .toLowerCase()
-                          .contains(_searchQuery.toLowerCase());
-                      final classFrom = subject['class_from'] ?? 0;
-                      final classTo = subject['class_to'] ?? 0;
-                      final studentClass =
-                          int.tryParse(student?.classLevel ?? '0') ?? 0;
-                      final classMatches =
-                          studentClass >= classFrom && studentClass <= classTo;
-                      return subjectMatches && classMatches;
-                    }) ?? false;
-                  }).toList();
+                      .map((doc) =>
+                          UserModel.fromMap(doc.data() as Map<String, dynamic>))
+                      .toList();
 
                   return ListView.builder(
                     itemCount: teachers.length,

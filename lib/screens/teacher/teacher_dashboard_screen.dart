@@ -6,6 +6,8 @@ import '../../routes/app_routes.dart';
 import '../../services/teacher_data_service.dart';
 import '_dashboard_widgets.dart';
 import 'tuition_needed_screen.dart';
+import 'selected_student_list_screen.dart';
+import 'search_tuition_screen.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
   const TeacherDashboardScreen({Key? key}) : super(key: key);
@@ -28,13 +30,18 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
 
   Future<void> _fetchDashboardData() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      return;
+    }
 
     final service = TeacherDataService();
     final sCount = await service.getStudentCount(user.uid);
     final aCount = await service.getAssignmentCount(user.uid);
     final attRate = await service.getAttendanceRate(user.uid);
 
+    if (!mounted) {
+      return;
+    }
     setState(() {
       studentCount = sCount;
       assignmentCount = aCount;
@@ -101,9 +108,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               title: const Text('Student List'),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Student list feature coming soon!')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SelectedStudentListScreen(),
+                  ),
                 );
               },
             ),
@@ -144,7 +153,8 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     'Welcome, Teacher!',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 30),
+                  // 'Find Tuition' section removed per request
 
                   // Dashboard Stats Cards
                   Row(
@@ -188,10 +198,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                         icon: Icons.people,
                         label: 'Student List',
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content:
-                                    Text('Student list feature coming soon!')),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SelectedStudentListScreen(),
+                            ),
                           );
                         },
                       ),
@@ -239,6 +250,19 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                           );
                         },
                       ),
+                      QuickActionButton(
+                        icon: Icons.search,
+                        label: 'Search Tuition',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SearchTuitionScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      // 'Find Tuition' quick action removed per request
                     ],
                   ),
                   const SizedBox(height: 30),

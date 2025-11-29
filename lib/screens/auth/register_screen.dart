@@ -1,6 +1,5 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:edututormobile/screens/teacher/teacher_profile_setup_screen.dart';
 import 'package:edututormobile/widgets/custom_button.dart';
 import 'package:edututormobile/widgets/custom_textfield.dart';
 import 'package:flutter/material.dart';
@@ -359,12 +358,10 @@ class _TeacherRegisterFormState extends State<_TeacherRegisterForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Registration successful')),
         );
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const TeacherProfileSetupScreen(),
-          ),
-        );
+        // After successful registration redirect the teacher to login so
+        // they can sign in. Clear navigation stack to prevent returning to
+        // the registration screen.
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

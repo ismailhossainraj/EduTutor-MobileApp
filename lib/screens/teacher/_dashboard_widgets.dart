@@ -31,13 +31,16 @@ class DashboardStatCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
             ),
             elevation: 6,
-            shadowColor: color.withOpacity(0.4),
+            shadowColor: color.withValues(alpha: 0.4),
             child: Container(
               width: 120,
               height: 130,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [color.withOpacity(0.9), color.withOpacity(0.6)],
+                  colors: [
+                    color.withValues(alpha: 0.9),
+                    color.withValues(alpha: 0.6)
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -49,7 +52,7 @@ class DashboardStatCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
                     child: Icon(icon, color: Colors.white, size: 28),
                   ),
                   const SizedBox(height: 12),
@@ -120,7 +123,7 @@ class _QuickActionButtonState extends State<QuickActionButton> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.blue.withOpacity(0.2),
+              color: Colors.blue.withValues(alpha: 0.2),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),

@@ -267,17 +267,19 @@ class _AdminStatCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircleAvatar(
-              backgroundColor: color.withOpacity(0.1),
+              backgroundColor: color.withValues(alpha: 0.1),
               child: Icon(icon, color: color),
             ),
             const SizedBox(height: 10),
             FutureBuilder(
-              future: value is Future<int> ? value as Future<int> : Future.value(value),
-              builder: (context, asyncSnapshot) {
-                return Text(asyncSnapshot.data?.toString() ?? '-',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold));
-              }
-            ),
+                future: value is Future<int>
+                    ? value as Future<int>
+                    : Future.value(value),
+                builder: (context, asyncSnapshot) {
+                  return Text(asyncSnapshot.data?.toString() ?? '-',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold));
+                }),
             const SizedBox(height: 4),
             Text(label, style: const TextStyle(fontSize: 14)),
           ],
@@ -312,7 +314,7 @@ class _AdminQuickAction extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
