@@ -156,33 +156,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   const SizedBox(height: 30),
                   // 'Find Tuition' section removed per request
 
-                  // Dashboard Stats Cards
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      DashboardStatCard(
-                        icon: Icons.people,
-                        label: 'Students',
-                        value: studentCount?.toString() ?? '-',
-                        color: Colors.blue,
-                      ),
-                      DashboardStatCard(
-                        icon: Icons.check_circle,
-                        label: 'Attendance',
-                        value: attendanceRate != null
-                            ? '${attendanceRate!.toStringAsFixed(1)}%'
-                            : '-',
-                        color: Colors.green,
-                      ),
-                      DashboardStatCard(
-                        icon: Icons.assignment,
-                        label: 'Assignments',
-                        value: assignmentCount?.toString() ?? '-',
-                        color: Colors.orange,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
+                  // Dashboard stats removed per request
 
                   // Quick Actions Section
                   Text(

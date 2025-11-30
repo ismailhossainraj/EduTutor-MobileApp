@@ -133,7 +133,7 @@ class ManageTuitionScreen extends StatelessWidget {
                 },
               ),
               const Divider(height: 24),
-              Text('Selected Tuitions',
+              Text('Teacher Requests',
                   style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 8),
               StreamBuilder<QuerySnapshot>(
