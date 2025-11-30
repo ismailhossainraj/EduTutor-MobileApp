@@ -5,6 +5,7 @@ import '../../models/user_model.dart';
 import '../../routes/app_routes.dart';
 import 'search_tutor_screen.dart';
 import '../teacher/tuition_needed_screen.dart';
+import '../../widgets/ai_chat_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -71,6 +72,17 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+            tooltip: 'AI Assistant',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => const AiChatWidget(),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: _logout,
@@ -553,51 +565,40 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            _buildProfileMenuItem(
-              icon: Icons.person,
-              title: 'Edit Profile',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Edit Profile - Coming Soon')),
-                );
-              },
+            // Registration details
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _infoRow('Full name', userModel?.fullName ?? ''),
+                  const SizedBox(height: 8),
+                  _infoRow('Email', userModel?.email ?? ''),
+                  const SizedBox(height: 8),
+                  _infoRow('Gender', userModel?.gender ?? ''),
+                  const SizedBox(height: 8),
+                  _infoRow('School', userModel?.schoolName ?? ''),
+                  const SizedBox(height: 8),
+                  _infoRow('Class', userModel?.classLevel ?? ''),
+                  const SizedBox(height: 8),
+                  _infoRow(
+                      'Registered',
+                      userModel != null
+                          ? '${userModel!.createdAt.toLocal()}'
+                          : ''),
+                ],
+              ),
             ),
-            _buildProfileMenuItem(
-              icon: Icons.lock,
-              title: 'Change Password',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Change Password - Coming Soon')),
-                );
-              },
-            ),
-            _buildProfileMenuItem(
-              icon: Icons.notifications,
-              title: 'Notifications',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Notifications - Coming Soon')),
-                );
-              },
-            ),
-            _buildProfileMenuItem(
-              icon: Icons.help,
-              title: 'Help & Support',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Help & Support - Coming Soon')),
-                );
-              },
-            ),
-            _buildProfileMenuItem(
-              icon: Icons.info,
-              title: 'About',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('About - Coming Soon')),
-                );
-              },
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => _showEditProfileDialog(),
+              icon: const Icon(Icons.edit),
+              label: const Text('Edit Profile'),
             ),
           ],
         ),
@@ -723,6 +724,102 @@ class _HomeScreenState extends State<HomeScreen> {
             SnackBar(content: Text('Enrollment failed: ${e.toString()}')));
       }
     }
+  }
+
+  Widget _infoRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 110,
+          child:
+              Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ),
+        Expanded(child: Text(value.isNotEmpty ? value : '—')),
+      ],
+    );
+  }
+
+  Future<void> _showEditProfileDialog() async {
+    if (currentUser == null) return;
+    final uid = currentUser!.uid;
+
+    // initialize controllers with current values
+    final firstNameCtrl =
+        TextEditingController(text: userModel?.firstName ?? '');
+    final lastNameCtrl = TextEditingController(text: userModel?.lastName ?? '');
+    final genderCtrl = TextEditingController(text: userModel?.gender ?? '');
+    final schoolCtrl = TextEditingController(text: userModel?.schoolName ?? '');
+    final classCtrl = TextEditingController(text: userModel?.classLevel ?? '');
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Profile'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: firstNameCtrl,
+                  decoration: const InputDecoration(labelText: 'First name'),
+                ),
+                TextField(
+                  controller: lastNameCtrl,
+                  decoration: const InputDecoration(labelText: 'Last name'),
+                ),
+                TextField(
+                  controller: genderCtrl,
+                  decoration: const InputDecoration(labelText: 'Gender'),
+                ),
+                TextField(
+                  controller: schoolCtrl,
+                  decoration: const InputDecoration(labelText: 'School'),
+                ),
+                TextField(
+                  controller: classCtrl,
+                  decoration: const InputDecoration(labelText: 'Class'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(uid)
+                      .update({
+                    'firstName': firstNameCtrl.text.trim(),
+                    'lastName': lastNameCtrl.text.trim(),
+                    'gender': genderCtrl.text.trim(),
+                    'schoolName': schoolCtrl.text.trim(),
+                    'classLevel': classCtrl.text.trim(),
+                  });
+                  Navigator.of(context).pop();
+                  await _loadUserData();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Profile updated')));
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('Update failed: ${e.toString()}')));
+                  }
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // _buildStatCard removed — Quick Stats were removed from the UI.
@@ -923,31 +1020,5 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProfileMenuItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.grey[300]!),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.blue[700]),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(title),
-            ),
-            Icon(Icons.arrow_forward, color: Colors.grey[400], size: 20),
-          ],
-        ),
-      ),
-    );
-  }
+  // Profile menu items removed; helper removed accordingly.
 }

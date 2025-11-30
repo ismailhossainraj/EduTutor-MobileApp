@@ -57,7 +57,7 @@ class StudentSearchScreenState extends State<StudentSearchScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => TeacherDetailsScreen(
-                                teacher: teacher,
+                                teacherUid: teacher.uid,
                               ),
                             ),
                           );

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../widgets/ai_chat_widget.dart';
 
 class ManageTuitionScreen extends StatelessWidget {
   const ManageTuitionScreen({Key? key}) : super(key: key);
@@ -7,7 +8,25 @@ class ManageTuitionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage Tuition')),
+      appBar: AppBar(title: const Text('Manage Tuition'), actions: [
+        IconButton(
+          icon: const Icon(Icons.chat_bubble_outline),
+          tooltip: 'AI Assistant',
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              builder: (_) => const SizedBox(
+                height: 600,
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: AiChatWidget(),
+                ),
+              ),
+            );
+          },
+        ),
+      ]),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(12.0),

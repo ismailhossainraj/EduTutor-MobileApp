@@ -21,6 +21,24 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
+    Widget bodyWidget;
+    switch (_selectedIndex) {
+      case 0:
+        bodyWidget = _buildEnrollmentsView(context, user);
+        break;
+      case 1:
+        bodyWidget = _buildModulesView(context);
+        break;
+      case 2:
+        bodyWidget = _buildFindTuitionView(context, user);
+        break;
+      case 3:
+        bodyWidget = _buildProfileView(context, user);
+        break;
+      default:
+        bodyWidget = _buildEnrollmentsView(context, user);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Student Dashboard'),
@@ -44,37 +62,10 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _selectedIndex = 2;
-                  });
-                },
-                icon: const Icon(Icons.search),
-                label: const Text('Find Tuition'),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: _selectedIndex == 0
-                ? _buildEnrollmentsView(context, user)
-                : _selectedIndex == 1
-                    ? _buildModulesView(context)
-                    : _buildFindTuitionView(context, user),
-          ),
-        ],
-      ),
+      body: bodyWidget,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
-          // Switch tabs for all indices so Find Tuition is an integrated tab.
           setState(() {
             _selectedIndex = index;
           });
@@ -92,6 +83,10 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             icon: Icon(Icons.search),
             label: 'Find Tuition',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -104,6 +99,149 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         label: const Text('Find Tuition'),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  void _showDetailsDialog(
+      BuildContext context, String uid, Map<String, dynamic> data) {
+    final created = data['createdAt'];
+    String createdStr;
+    try {
+      if (created == null) {
+        createdStr = 'Unknown';
+      } else if (created is Timestamp) {
+        createdStr = created.toDate().toLocal().toString();
+      } else {
+        createdStr = created.toString();
+      }
+    } catch (_) {
+      createdStr = created?.toString() ?? 'Unknown';
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Details'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('UID: $uid'),
+                const SizedBox(height: 8),
+                Text('Email: ${data['email'] ?? '—'}'),
+                const SizedBox(height: 8),
+                Text(
+                    'Name: ${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'
+                        .trim()),
+                const SizedBox(height: 8),
+                Text('Phone: ${data['phoneNumber'] ?? '—'}'),
+                const SizedBox(height: 8),
+                Text('School: ${data['schoolName'] ?? '—'}'),
+                const SizedBox(height: 8),
+                Text('Class: ${data['classLevel'] ?? '—'}'),
+                const SizedBox(height: 8),
+                Text('Gender: ${data['gender'] ?? '—'}'),
+                const SizedBox(height: 8),
+                Text('Role: ${data['role'] ?? 'student'}'),
+                const SizedBox(height: 8),
+                Text('Registered: $createdStr'),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close')),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileView(BuildContext context, User? user) {
+    if (user == null) {
+      return const Center(child: Text('Not signed in'));
+    }
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .snapshots(),
+      builder: (context, snap) {
+        if (!snap.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final doc = snap.data!;
+        if (!doc.exists) {
+          return const Center(child: Text('Profile not found'));
+        }
+        final data = doc.data() as Map<String, dynamic>;
+        final fullName =
+            '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim();
+        final email = (data['email'] ?? user.email ?? '').toString();
+        final phone = (data['phoneNumber'] ?? '').toString();
+        final school = (data['schoolName'] ?? '').toString();
+        final classLevel = (data['classLevel'] ?? '').toString();
+        final gender = (data['gender'] ?? '').toString();
+
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                CircleAvatar(
+                  radius: 48,
+                  child: Text(
+                    fullName.isNotEmpty ? fullName[0].toUpperCase() : '?',
+                    style: const TextStyle(fontSize: 32),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  fullName.isNotEmpty ? fullName : 'Unnamed',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: const Icon(Icons.email),
+                  title: Text(email),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.phone),
+                  title: Text(phone.isNotEmpty ? phone : '—'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.school),
+                  title: Text(school.isNotEmpty ? school : '—'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.class_),
+                  title: Text(classLevel.isNotEmpty ? classLevel : '—'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: Text(gender.isNotEmpty ? gender : '—'),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () =>
+                          _showDetailsDialog(context, doc.id, data),
+                      child: const Text('Details'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

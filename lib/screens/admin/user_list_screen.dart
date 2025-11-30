@@ -73,7 +73,7 @@ class UserListScreen extends StatelessWidget {
                         if (role == 'teacher') {
                           Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) =>
-                                TeacherDetailsScreen(teacher: userModel),
+                                TeacherDetailsScreen(teacherUid: userModel.uid),
                           ));
                         } else if (role == 'student') {
                           Navigator.of(context).push(MaterialPageRoute(

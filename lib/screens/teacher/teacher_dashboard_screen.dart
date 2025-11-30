@@ -5,7 +5,9 @@ import '../../models/enrollment_model.dart';
 import '../../routes/app_routes.dart';
 import '../../services/teacher_data_service.dart';
 import '_dashboard_widgets.dart';
+import '../../widgets/ai_chat_widget.dart';
 import 'tuition_needed_screen.dart';
+import 'teacher_details_screen.dart';
 import 'selected_student_list_screen.dart';
 import 'search_tuition_screen.dart';
 
@@ -58,6 +60,23 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
       appBar: AppBar(
         title: const Text('Teacher Dashboard'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline),
+            tooltip: 'AI Assistant',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => const SizedBox(
+                  height: 600,
+                  child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: AiChatWidget(),
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.home),
             tooltip: 'Home',
@@ -205,11 +224,40 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                       QuickActionButton(
                         icon: Icons.person,
                         label: 'Profile',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Profile feature coming soon!')),
-                          );
+                        onTap: () async {
+                          final current = FirebaseAuth.instance.currentUser;
+                          if (current == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Not signed in')),
+                            );
+                            return;
+                          }
+
+                          try {
+                            final doc = await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(current.uid)
+                                .get();
+                            if (!doc.exists) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Profile not found')),
+                              );
+                              return;
+                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TeacherDetailsScreen(
+                                  teacherUid: current.uid,
+                                ),
+                              ),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: ${e.toString()}')),
+                            );
+                          }
                         },
                       ),
                       QuickActionButton(
