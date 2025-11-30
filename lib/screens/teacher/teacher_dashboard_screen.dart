@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../models/enrollment_model.dart';
+// enrollment model no longer used in this screen
 import '../../routes/app_routes.dart';
 import '../../services/teacher_data_service.dart';
 import '_dashboard_widgets.dart';
@@ -54,8 +54,6 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Teacher Dashboard'),
@@ -135,28 +133,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.visibility),
-              title: const Text('View Student'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('View student feature coming soon!')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.check_circle),
-              title: const Text('Attendance'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Attendance feature coming soon!')),
-                );
-              },
-            ),
+            // 'View Student' and 'Attendance' removed per request.
           ],
         ),
       ),
@@ -196,28 +173,6 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                             MaterialPageRoute(
                               builder: (_) => const SelectedStudentListScreen(),
                             ),
-                          );
-                        },
-                      ),
-                      QuickActionButton(
-                        icon: Icons.visibility,
-                        label: 'View Student',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content:
-                                    Text('View student feature coming soon!')),
-                          );
-                        },
-                      ),
-                      QuickActionButton(
-                        icon: Icons.check_circle,
-                        label: 'Attendance',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content:
-                                    Text('Attendance feature coming soon!')),
                           );
                         },
                       ),
@@ -289,125 +244,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                   ),
                   const SizedBox(height: 30),
 
-                  // Recent Activity Section
-                  Text(
-                    'Recent Activity',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 10),
-                  const Card(
-                    child: ListTile(
-                      leading: Icon(Icons.assignment_turned_in),
-                      title: Text('Checked assignment submissions'),
-                      subtitle: Text('Today, 10:00 AM'),
-                    ),
-                  ),
-                  const Card(
-                    child: ListTile(
-                      leading: Icon(Icons.check_circle_outline),
-                      title: Text('Marked attendance for Class 10A'),
-                      subtitle: Text('Yesterday, 9:00 AM'),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
+                  // Recent Activity removed per request.
 
-                  // Interested Students Section
-                  Text(
-                    'Interested Students',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 10),
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('enrollments')
-                        .where('teacherId', isEqualTo: user?.uid)
-                        .where('status', isEqualTo: 'interested')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      final enrollments = snapshot.data!.docs
-                          .map((doc) => EnrollmentModel.fromMap(
-                              doc.data() as Map<String, dynamic>))
-                          .toList();
-
-                      if (enrollments.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16.0),
-                          child: Text('No interested students'),
-                        );
-                      }
-
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: enrollments.length,
-                        itemBuilder: (context, index) {
-                          final enrollment = enrollments[index];
-                          return ListTile(
-                            title: Text(enrollment.subject),
-                            subtitle: Text('Mode: ${enrollment.mode}'),
-                            trailing: ElevatedButton(
-                              onPressed: () {
-                                FirebaseFirestore.instance
-                                    .collection('enrollments')
-                                    .doc(enrollment.uid)
-                                    .update({'status': 'enrolled'});
-                              },
-                              child: const Text('Enroll'),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Enrolled Students Section
-                  Text(
-                    'Enrolled Students',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 10),
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('enrollments')
-                        .where('teacherId', isEqualTo: user?.uid)
-                        .where('status', isEqualTo: 'enrolled')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      final enrollments = snapshot.data!.docs
-                          .map((doc) => EnrollmentModel.fromMap(
-                              doc.data() as Map<String, dynamic>))
-                          .toList();
-
-                      if (enrollments.isEmpty) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16.0),
-                          child: Text('No enrolled students'),
-                        );
-                      }
-
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: enrollments.length,
-                        itemBuilder: (context, index) {
-                          final enrollment = enrollments[index];
-                          return ListTile(
-                            title: Text(enrollment.subject),
-                            subtitle: Text('Mode: ${enrollment.mode}'),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  // Interested / Enrolled students sections removed per request.
                 ],
               ),
             ),
