@@ -40,10 +40,12 @@ class AdminDashboardScreen extends StatelessWidget {
                 }
 
                 final users = snapshot.data!.docs;
-                final studentCount =
-                    users.where((doc) => doc['role'] == 'student').length;
-                final teacherCount =
-                    users.where((doc) => doc['role'] == 'teacher').length;
+                final studentDocs =
+                    users.where((doc) => doc['role'] == 'student').toList();
+                final teacherDocs =
+                    users.where((doc) => doc['role'] == 'teacher').toList();
+                final studentCount = studentDocs.length;
+                final teacherCount = teacherDocs.length;
 
                 // responsive card layout: switch to wrap/grid based on available width
                 return LayoutBuilder(builder: (context, constraints) {
@@ -64,12 +66,50 @@ class AdminDashboardScreen extends StatelessWidget {
                     );
                   }
 
+                  Widget avatarsForDocs(List docs) {
+                    final shown = docs.take(3).toList();
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: shown.map<Widget>((doc) {
+                        final data =
+                            (doc.data() as Map<String, dynamic>?) ?? {};
+                        final photo =
+                            data['photoUrl'] ?? data['photo_url'] ?? '';
+                        final name = data['displayName'] ?? data['name'] ?? '';
+                        final initials =
+                            (name != null && name.toString().isNotEmpty)
+                                ? name
+                                    .toString()
+                                    .trim()
+                                    .split(' ')
+                                    .map((s) => s.isNotEmpty ? s[0] : '')
+                                    .take(2)
+                                    .join()
+                                : '';
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6.0),
+                          child: CircleAvatar(
+                            radius: 16,
+                            backgroundImage:
+                                (photo != null && photo.toString().isNotEmpty)
+                                    ? NetworkImage(photo.toString())
+                                    : null,
+                            child: (photo == null || photo.toString().isEmpty)
+                                ? Text(initials)
+                                : null,
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  }
+
                   return Wrap(
                     spacing: spacing,
                     runSpacing: spacing,
                     children: [
                       buildCard(
                         child: ListTile(
+                          leading: avatarsForDocs(studentDocs),
                           title: const Text('All Students'),
                           trailing: Text(studentCount.toString()),
                         ),
@@ -85,6 +125,7 @@ class AdminDashboardScreen extends StatelessWidget {
                       ),
                       buildCard(
                         child: ListTile(
+                          leading: avatarsForDocs(teacherDocs),
                           title: const Text('All Teachers'),
                           trailing: Text(teacherCount.toString()),
                         ),
@@ -182,6 +223,50 @@ class AdminDashboardScreen extends StatelessWidget {
                       final date = enrollment.createdAt;
                       final dateStr = '${date.month}/${date.day}/${date.year}';
                       return ListTile(
+                        leading: FutureBuilder<DocumentSnapshot>(
+                          future: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(enrollment.studentId)
+                              .get(),
+                          builder: (context, userSnap) {
+                            if (userSnap.connectionState ==
+                                ConnectionState.waiting) {
+                              return const CircleAvatar(radius: 20);
+                            }
+                            if (!userSnap.hasData ||
+                                userSnap.data == null ||
+                                !userSnap.data!.exists) {
+                              return const CircleAvatar(radius: 20);
+                            }
+                            final data = userSnap.data!.data()
+                                    as Map<String, dynamic>? ??
+                                {};
+                            final photo =
+                                data['photoUrl'] ?? data['photo_url'] ?? '';
+                            final name =
+                                data['displayName'] ?? data['name'] ?? '';
+                            final initials =
+                                (name != null && name.toString().isNotEmpty)
+                                    ? name
+                                        .toString()
+                                        .trim()
+                                        .split(' ')
+                                        .map((s) => s.isNotEmpty ? s[0] : '')
+                                        .take(2)
+                                        .join()
+                                    : '';
+                            return CircleAvatar(
+                              radius: 20,
+                              backgroundImage:
+                                  (photo != null && photo.toString().isNotEmpty)
+                                      ? NetworkImage(photo.toString())
+                                      : null,
+                              child: (photo == null || photo.toString().isEmpty)
+                                  ? Text(initials)
+                                  : null,
+                            );
+                          },
+                        ),
                         title: Text(enrollment.subject),
                         subtitle: Text(
                             'Status: ${enrollment.status} • Date: $dateStr'),

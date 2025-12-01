@@ -813,7 +813,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   await _loadUserData();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Profile updated')));
+                        const SnackBar(content: Text('Successfully changed')));
                   }
                 } catch (e) {
                   if (mounted) {

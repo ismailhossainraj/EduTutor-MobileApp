@@ -151,7 +151,7 @@ class _TeacherDetailsScreenState extends State<TeacherDetailsScreen> {
                   });
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Profile updated')));
+                      const SnackBar(content: Text('Successfully changed')));
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                       content: Text('Update failed: ${e.toString()}')));

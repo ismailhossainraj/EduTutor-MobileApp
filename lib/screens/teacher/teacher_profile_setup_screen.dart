@@ -102,12 +102,15 @@ class TeacherProfileSetupScreenState extends State<TeacherProfileSetupScreen> {
     if (user != null) {
       final searchableSubjects =
           _teacherSubjects.map((s) => s['subject'] as String).toList();
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
         'subjects': _teacherSubjects,
         'searchableSubjects': searchableSubjects,
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully')),
+        const SnackBar(content: Text('Successfully changed')),
       );
     }
   }
