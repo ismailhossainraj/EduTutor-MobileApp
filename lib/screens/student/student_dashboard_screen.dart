@@ -14,6 +14,100 @@ class StudentDashboardScreen extends StatefulWidget {
   State<StudentDashboardScreen> createState() => _StudentDashboardScreenState();
 }
 
+class _HeaderStat extends StatelessWidget {
+  final String title;
+  final Stream<QuerySnapshot> stream;
+
+  const _HeaderStat({Key? key, required this.title, required this.stream})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: stream,
+          builder: (context, snap) {
+            if (!snap.hasData) {
+              return Row(
+                children: [
+                  const CircularProgressIndicator(strokeWidth: 2),
+                  const SizedBox(width: 8),
+                  Text(title),
+                ],
+              );
+            }
+            final count = snap.data!.docs.length;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: 6),
+                Text('$count',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _TopNavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _TopNavItem({
+    Key? key,
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? Theme.of(context).primaryColor : Colors.grey[600];
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? color!.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(color: color, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   int _selectedIndex = 0;
 
@@ -40,18 +134,13 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('Student Dashboard'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        title: const Text(''),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: 'Find Tuition',
-            onPressed: () {
-              setState(() {
-                _selectedIndex = 2;
-              });
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -62,30 +151,190 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
           ),
         ],
       ),
-      body: bodyWidget,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.book),
-            label: 'Enrollments',
+      body: Column(
+        children: [
+          // Top header with gradient, greeting and nav
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4A90E2), Color(0xFF50E3C2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 26,
+                          backgroundColor: Colors.white.withValues(alpha: 0.3),
+                          child: Text(
+                            user?.displayName != null &&
+                                    user!.displayName!.isNotEmpty
+                                ? user.displayName![0].toUpperCase()
+                                : (user?.email ?? '?')[0].toUpperCase(),
+                            style: const TextStyle(
+                                fontSize: 24, color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome back',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: Colors.white70),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              user != null && user.email != null
+                                  ? user.email!.split('@').first
+                                  : 'Student',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.search, color: Colors.white),
+                      onPressed: () {
+                        setState(() {
+                          _selectedIndex = 2;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // top navigation row
+                Material(
+                  color: Colors.white,
+                  elevation: 0,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _TopNavItem(
+                          icon: Icons.book,
+                          label: 'Enrollments',
+                          selected: _selectedIndex == 0,
+                          onTap: () => setState(() => _selectedIndex = 0),
+                        ),
+                        _TopNavItem(
+                          icon: Icons.dashboard,
+                          label: 'Modules',
+                          selected: _selectedIndex == 1,
+                          onTap: () => setState(() => _selectedIndex = 1),
+                        ),
+                        _TopNavItem(
+                          icon: Icons.search,
+                          label: 'Find',
+                          selected: _selectedIndex == 2,
+                          onTap: () => setState(() => _selectedIndex = 2),
+                        ),
+                        _TopNavItem(
+                          icon: Icons.person,
+                          label: 'Profile',
+                          selected: _selectedIndex == 3,
+                          onTap: () => setState(() => _selectedIndex = 3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Modules',
+          // Stats row
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: _HeaderStat(
+                  title: 'Enrolled',
+                  stream: FirebaseFirestore.instance
+                      .collection('enrollments')
+                      .where('studentId', isEqualTo: user?.uid)
+                      .where('status', isEqualTo: 'enrolled')
+                      .snapshots(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _HeaderStat(
+                  title: 'Pending',
+                  stream: FirebaseFirestore.instance
+                      .collection('enrollments')
+                      .where('studentId', isEqualTo: user?.uid)
+                      .where('status', isEqualTo: 'interested')
+                      .snapshots(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _HeaderStat(
+                  title: 'Available',
+                  stream: FirebaseFirestore.instance
+                      .collection('tuitions')
+                      .where('status',
+                          whereIn: ['open', 'selected']).snapshots(),
+                ),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Find Tuition',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
+          // Content with animated switcher
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  color: Colors.white,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    transitionBuilder: (child, anim) =>
+                        FadeTransition(opacity: anim, child: child),
+                    child: SizedBox(
+                      key: ValueKey<int>(_selectedIndex),
+                      width: double.infinity,
+                      height: double.infinity,
+                      child: bodyWidget,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -499,7 +748,9 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       padding: const EdgeInsets.all(20.0),
       child: Column(
         children: [
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
             children: [
               ElevatedButton(
                 onPressed: () {
@@ -512,7 +763,6 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                 },
                 child: const Text('Search for Teachers'),
               ),
-              const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: () {
                   setState(() {
@@ -927,114 +1177,122 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
             ),
             const SizedBox(height: 16),
             const SizedBox(height: 12),
-            // Add Available Tuition module card for easy access
-            _buildModuleCard(
-              context,
-              'Available Tuition',
-              'Find tutors posted by teachers',
-              Icons.search,
-              Colors.indigo,
-              () => setState(() {
-                _selectedIndex = 2;
-              }),
-            ),
-            const SizedBox(height: 20),
-            const SizedBox(height: 20),
-            // Payment Section
-            _buildSectionHeader(context, 'Payment Management'),
-            const SizedBox(height: 10),
-            _buildModuleCard(
-              context,
-              'Payments',
-              'View and manage payments',
-              Icons.payment,
-              Colors.blue,
-              () => Navigator.pushNamed(context, AppRoutes.studentPayments),
-            ),
-            const SizedBox(height: 10),
-            _buildModuleCard(
-              context,
-              'Payment History',
-              'View your payment history',
-              Icons.history,
-              Colors.indigo,
-              () => Navigator.pushNamed(context, AppRoutes.paymentHistory),
-            ),
-            const SizedBox(height: 10),
-            _buildModuleCard(
-              context,
-              'Invoices',
-              'View your invoices',
-              Icons.receipt,
-              Colors.purple,
-              () => Navigator.pushNamed(context, AppRoutes.invoiceView),
-            ),
-            const SizedBox(height: 30),
-            // Academic Section
-            _buildSectionHeader(context, 'Academic'),
-            const SizedBox(height: 10),
-            _buildModuleCard(
-              context,
-              'Results',
-              'View exam results',
-              Icons.assessment,
-              Colors.green,
-              () => Navigator.pushNamed(context, AppRoutes.studentResults),
-            ),
-            const SizedBox(height: 10),
-            _buildModuleCard(
-              context,
-              'Progress Report',
-              'View your progress',
-              Icons.trending_up,
-              Colors.teal,
-              () => Navigator.pushNamed(context, AppRoutes.studentProgress),
-            ),
-            const SizedBox(height: 10),
-            _buildModuleCard(
-              context,
-              'Rewards',
-              'View achievements and rewards',
-              Icons.star,
-              Colors.amber,
-              () => Navigator.pushNamed(context, AppRoutes.studentRewards),
-            ),
-            const SizedBox(height: 30),
-            // Class & Materials Section
-            _buildSectionHeader(context, 'Learning Resources'),
-            const SizedBox(height: 10),
-            _buildModuleCard(
-              context,
-              'Class Schedule',
-              'View class timetable',
-              Icons.schedule,
-              Colors.orange,
-              () => Navigator.pushNamed(context, AppRoutes.studentSchedule),
-            ),
-            const SizedBox(height: 10),
-            _buildModuleCard(
-              context,
-              'Materials',
-              'Download course materials',
-              Icons.folder,
-              Colors.brown,
-              () => Navigator.pushNamed(context, AppRoutes.studentMaterials),
-            ),
+            // Responsive module grid
+            LayoutBuilder(builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              int crossAxisCount = 1;
+              double childAspect = 3.2;
+              if (width > 1100) {
+                crossAxisCount = 3;
+                childAspect = 3.2;
+              } else if (width > 700) {
+                crossAxisCount = 2;
+                childAspect = 3.2;
+              } else {
+                crossAxisCount = 1;
+                childAspect = 3.6;
+              }
+
+              final modules = [
+                {
+                  'title': 'Available Tuition',
+                  'subtitle': 'Find tutors posted by teachers',
+                  'icon': Icons.search,
+                  'color': Colors.indigo,
+                  'onTap': () => setState(() => _selectedIndex = 2),
+                },
+                {
+                  'title': 'Payments',
+                  'subtitle': 'View and manage payments',
+                  'icon': Icons.payment,
+                  'color': Colors.blue,
+                  'onTap': () =>
+                      Navigator.pushNamed(context, AppRoutes.studentPayments),
+                },
+                {
+                  'title': 'Payment History',
+                  'subtitle': 'View your payment history',
+                  'icon': Icons.history,
+                  'color': Colors.indigo,
+                  'onTap': () =>
+                      Navigator.pushNamed(context, AppRoutes.paymentHistory),
+                },
+                {
+                  'title': 'Invoices',
+                  'subtitle': 'View your invoices',
+                  'icon': Icons.receipt,
+                  'color': Colors.purple,
+                  'onTap': () =>
+                      Navigator.pushNamed(context, AppRoutes.invoiceView),
+                },
+                {
+                  'title': 'Results',
+                  'subtitle': 'View exam results',
+                  'icon': Icons.assessment,
+                  'color': Colors.green,
+                  'onTap': () =>
+                      Navigator.pushNamed(context, AppRoutes.studentResults),
+                },
+                {
+                  'title': 'Progress Report',
+                  'subtitle': 'View your progress',
+                  'icon': Icons.trending_up,
+                  'color': Colors.teal,
+                  'onTap': () =>
+                      Navigator.pushNamed(context, AppRoutes.studentProgress),
+                },
+                {
+                  'title': 'Rewards',
+                  'subtitle': 'View achievements and rewards',
+                  'icon': Icons.star,
+                  'color': Colors.amber,
+                  'onTap': () =>
+                      Navigator.pushNamed(context, AppRoutes.studentRewards),
+                },
+                {
+                  'title': 'Class Schedule',
+                  'subtitle': 'View class timetable',
+                  'icon': Icons.schedule,
+                  'color': Colors.orange,
+                  'onTap': () =>
+                      Navigator.pushNamed(context, AppRoutes.studentSchedule),
+                },
+                {
+                  'title': 'Materials',
+                  'subtitle': 'Download course materials',
+                  'icon': Icons.folder,
+                  'color': Colors.brown,
+                  'onTap': () =>
+                      Navigator.pushNamed(context, AppRoutes.studentMaterials),
+                },
+              ];
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: childAspect,
+                ),
+                itemCount: modules.length,
+                itemBuilder: (context, index) {
+                  final m = modules[index];
+                  return _buildModuleCard(
+                    context,
+                    m['title'] as String,
+                    m['subtitle'] as String,
+                    m['icon'] as IconData,
+                    m['color'] as Color,
+                    m['onTap'] as VoidCallback,
+                  );
+                },
+              );
+            }),
             const SizedBox(height: 30),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
       ),
     );
   }

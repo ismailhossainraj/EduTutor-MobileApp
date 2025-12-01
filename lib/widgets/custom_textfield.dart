@@ -8,6 +8,9 @@ class CustomTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final int? maxLines;
   final Widget? suffixIcon;
+  final void Function(String)? onFieldSubmitted;
+  final TextInputAction? textInputAction;
+  final FocusNode? focusNode;
 
   const CustomTextField({
     super.key,
@@ -18,6 +21,9 @@ class CustomTextField extends StatelessWidget {
     this.keyboardType,
     this.maxLines = 1,
     this.suffixIcon,
+    this.onFieldSubmitted,
+    this.textInputAction,
+    this.focusNode,
   });
 
   @override
@@ -26,6 +32,9 @@ class CustomTextField extends StatelessWidget {
       controller: controller,
       obscureText: obscureText,
       validator: validator,
+      focusNode: focusNode,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted,
       keyboardType: keyboardType,
       maxLines: maxLines,
       decoration: InputDecoration(

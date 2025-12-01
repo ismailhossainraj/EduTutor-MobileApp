@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 
-/// Dashboard Stat Card with attractive design
+/// Responsive Dashboard Stat Card
 class DashboardStatCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -20,53 +20,63 @@ class DashboardStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0.9, end: 1.0),
-      duration: const Duration(milliseconds: 500),
+      tween: Tween<double>(begin: 0.95, end: 1.0),
+      duration: const Duration(milliseconds: 400),
       curve: Curves.easeOutBack,
       builder: (context, scale, child) {
         return Transform.scale(
           scale: scale,
           child: Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-            ),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             elevation: 6,
-            shadowColor: color.withOpacity(0.4),
-            child: Container(
-              width: 120,
-              height: 130,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [color.withOpacity(0.9), color.withOpacity(0.6)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            shadowColor: color.withValues(alpha: 0.35),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                  minWidth: 110, maxWidth: 260, minHeight: 100, maxHeight: 180),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withValues(alpha: 0.95),
+                      color.withValues(alpha: 0.65)
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    child: Icon(icon, color: Colors.white, size: 28),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    label,
-                    style: TextStyle(fontSize: 15, color: Colors.white70),
-                  ),
-                ],
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                child: LayoutBuilder(builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 140;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: isNarrow ? 18 : 22,
+                        backgroundColor: Colors.white.withValues(alpha: 0.18),
+                        child: Icon(icon,
+                            color: Colors.white, size: isNarrow ? 20 : 24),
+                      ),
+                      SizedBox(height: isNarrow ? 8 : 12),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(value,
+                            style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                      ),
+                      SizedBox(height: isNarrow ? 4 : 6),
+                      Text(label,
+                          style: TextStyle(
+                              fontSize: isNarrow ? 12 : 13,
+                              color: Colors.white70)),
+                    ],
+                  );
+                }),
               ),
             ),
           ),
@@ -76,7 +86,7 @@ class DashboardStatCard extends StatelessWidget {
   }
 }
 
-/// Quick Action Button with press animation
+/// Responsive Quick Action Button
 class QuickActionButton extends StatefulWidget {
   final IconData icon;
   final String label;
@@ -106,36 +116,45 @@ class _QuickActionButtonState extends State<QuickActionButton> {
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-        transform: Matrix4.identity()..scale(_isPressed ? 0.95 : 1.0),
-        width: 130,
-        height: 100,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blueAccent, Colors.lightBlueAccent],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+        transform: Matrix4.identity()..scale(_isPressed ? 0.97 : 1.0),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+              minWidth: 100, maxWidth: 240, minHeight: 80, maxHeight: 120),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                  colors: [Colors.blueAccent, Colors.lightBlueAccent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            child: LayoutBuilder(builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 140;
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(widget.icon,
+                      size: isCompact ? 22 : 28, color: Colors.white),
+                  SizedBox(height: isCompact ? 6 : 10),
+                  Flexible(
+                    child: Text(widget.label,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: isCompact ? 12 : 14, color: Colors.white),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                ],
+              );
+            }),
           ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blue.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(widget.icon, size: 34, color: Colors.white),
-            const SizedBox(height: 8),
-            Text(
-              widget.label,
-              style: const TextStyle(fontSize: 15, color: Colors.white),
-            ),
-          ],
         ),
       ),
     );

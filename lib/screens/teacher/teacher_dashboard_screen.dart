@@ -22,6 +22,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   int? studentCount;
   int? assignmentCount;
   double? attendanceRate;
+  String? teacherName;
   bool loading = true;
 
   @override
@@ -41,6 +42,28 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     final aCount = await service.getAssignmentCount(user.uid);
     final attRate = await service.getAttendanceRate(user.uid);
 
+    // fetch teacher profile name (firstName + lastName) if available
+    String name = '';
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null) {
+          final fn = (data['firstName'] ?? '').toString();
+          final ln = (data['lastName'] ?? '').toString();
+          name = '$fn $ln'.trim();
+        }
+      }
+    } catch (_) {
+      // ignore firestore read errors for name, fallback to auth displayName
+    }
+    if (name.isEmpty) {
+      name = user.displayName ?? 'Teacher';
+    }
+
     if (!mounted) {
       return;
     }
@@ -48,6 +71,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
       studentCount = sCount;
       assignmentCount = aCount;
       attendanceRate = attRate;
+      teacherName = name;
       loading = false;
     });
   }
@@ -65,11 +89,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
-                builder: (_) => const SizedBox(
-                  height: 600,
+                builder: (ctx) => const FractionallySizedBox(
+                  heightFactor: 0.85,
                   child: Padding(
                     padding: EdgeInsets.all(8.0),
-                    child: AiChatWidget(),
+                    child: SafeArea(child: AiChatWidget()),
                   ),
                 ),
               );
@@ -144,109 +168,180 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Welcome Section
-                  Text(
-                    'Welcome, Teacher!',
-                    style: Theme.of(context).textTheme.headlineSmall,
+                  // Hero header with teacher name
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue.shade700, Colors.blueAccent],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 18, horizontal: 16),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 36,
+                          backgroundColor: Colors.white24,
+                          child: Text(
+                            (teacherName != null && teacherName!.isNotEmpty)
+                                ? teacherName![0].toUpperCase()
+                                : 'T',
+                            style: const TextStyle(
+                                fontSize: 28, color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Welcome back,',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(color: Colors.white70),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                teacherName != null && teacherName!.isNotEmpty
+                                    ? teacherName!
+                                    : 'Teacher',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Manage your classes, students and posts',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(color: Colors.white70),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.settings, color: Colors.white),
+                          onPressed: () {},
+                        )
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 30),
-                  // 'Find Tuition' section removed per request
+                  const SizedBox(height: 18),
 
-                  // Dashboard stats removed per request
+                  // (Stats removed by request)
 
-                  // Quick Actions Section
+                  // Quick Actions (responsive grid)
                   Text(
                     'Quick Actions',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      QuickActionButton(
-                        icon: Icons.people,
-                        label: 'Student List',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SelectedStudentListScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      QuickActionButton(
-                        icon: Icons.person,
-                        label: 'Profile',
-                        onTap: () async {
-                          final current = FirebaseAuth.instance.currentUser;
-                          if (current == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Not signed in')),
-                            );
-                            return;
-                          }
+                  const SizedBox(height: 8),
+                  LayoutBuilder(builder: (context, constraints) {
+                    final maxW = constraints.maxWidth;
+                    const spacing = 12.0;
+                    final columns = maxW >= 700 ? 2 : 1;
+                    final itemW = (maxW - (columns - 1) * spacing) / columns;
 
-                          try {
-                            final doc = await FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(current.uid)
-                                .get();
-                            if (!doc.exists) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Profile not found')),
-                              );
-                              return;
-                            }
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => TeacherDetailsScreen(
-                                  teacherUid: current.uid,
-                                ),
-                              ),
-                            );
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: ${e.toString()}')),
-                            );
-                          }
-                        },
-                      ),
-                      QuickActionButton(
-                        icon: Icons.school,
-                        label: 'Tuition Needed',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const TuitionNeededScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      QuickActionButton(
-                        icon: Icons.search,
-                        label: 'Search Tuition',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SearchTuitionScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      // 'Find Tuition' quick action removed per request
-                    ],
-                  ),
-                  const SizedBox(height: 30),
+                    Widget actionItem({required Widget child}) =>
+                        SizedBox(width: itemW, child: child);
 
-                  // Recent Activity removed per request.
-
-                  // Interested / Enrolled students sections removed per request.
+                    return Wrap(
+                      spacing: spacing,
+                      runSpacing: spacing,
+                      children: [
+                        actionItem(
+                            child: QuickActionButton(
+                                icon: Icons.search,
+                                label: 'Search Tuition',
+                                onTap: () {
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              const SearchTuitionScreen()));
+                                })),
+                        actionItem(
+                            child: QuickActionButton(
+                                icon: Icons.school,
+                                label: 'Tuition Needed',
+                                onTap: () {
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              const TuitionNeededScreen()));
+                                })),
+                        actionItem(
+                            child: QuickActionButton(
+                                icon: Icons.people,
+                                label: 'Student List',
+                                onTap: () {
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              const SelectedStudentListScreen()));
+                                })),
+                        actionItem(
+                            child: QuickActionButton(
+                                icon: Icons.person,
+                                label: 'Profile',
+                                onTap: () async {
+                                  final current =
+                                      FirebaseAuth.instance.currentUser;
+                                  if (current == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                            content: Text('Not signed in')));
+                                    return;
+                                  }
+                                  try {
+                                    final doc = await FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(current.uid)
+                                        .get();
+                                    if (!doc.exists) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                              content:
+                                                  Text('Profile not found')));
+                                      return;
+                                    }
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (_) =>
+                                                TeacherDetailsScreen(
+                                                    teacherUid: current.uid)));
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                                'Error: ${e.toString()}')));
+                                  }
+                                })),
+                      ],
+                    );
+                  }),
+                  const SizedBox(height: 24),
+                  // Recent Activity removed by request.
                 ],
               ),
             ),

@@ -265,6 +265,8 @@ class _StudentRegisterFormState extends State<_StudentRegisterForm> {
                   });
                 },
               ),
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _register(),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please confirm your password';
@@ -515,6 +517,8 @@ class _TeacherRegisterFormState extends State<_TeacherRegisterForm> {
                   });
                 },
               ),
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _register(),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please confirm your password';

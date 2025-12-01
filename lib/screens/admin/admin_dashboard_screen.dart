@@ -45,57 +45,74 @@ class AdminDashboardScreen extends StatelessWidget {
                 final teacherCount =
                     users.where((doc) => doc['role'] == 'teacher').length;
 
-                return Column(
-                  children: [
-                    Card(
-                      child: ListTile(
-                        title: const Text('All Students'),
-                        trailing: Text(studentCount.toString()),
+                // responsive card layout: switch to wrap/grid based on available width
+                return LayoutBuilder(builder: (context, constraints) {
+                  final maxWidth = constraints.maxWidth;
+                  const spacing = 12.0;
+                  final columns =
+                      maxWidth >= 800 ? 3 : (maxWidth >= 560 ? 2 : 1);
+                  final itemWidth =
+                      (maxWidth - (columns - 1) * spacing) / columns;
+
+                  Widget buildCard(
+                      {required Widget child, required VoidCallback onTap}) {
+                    return SizedBox(
+                      width: itemWidth,
+                      child: Card(
+                        child: InkWell(onTap: onTap, child: child),
+                      ),
+                    );
+                  }
+
+                  return Wrap(
+                    spacing: spacing,
+                    runSpacing: spacing,
+                    children: [
+                      buildCard(
+                        child: ListTile(
+                          title: const Text('All Students'),
+                          trailing: Text(studentCount.toString()),
+                        ),
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => const UserListScreen(
-                                role: 'student',
-                                title: 'All Students',
-                              ),
+                                  role: 'student', title: 'All Students'),
                             ),
                           );
                         },
                       ),
-                    ),
-                    Card(
-                      child: ListTile(
-                        title: const Text('All Teachers'),
-                        trailing: Text(teacherCount.toString()),
+                      buildCard(
+                        child: ListTile(
+                          title: const Text('All Teachers'),
+                          trailing: Text(teacherCount.toString()),
+                        ),
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => const UserListScreen(
-                                role: 'teacher',
-                                title: 'All Teachers',
-                              ),
+                                  role: 'teacher', title: 'All Teachers'),
                             ),
                           );
                         },
                       ),
-                    ),
-                    Card(
-                      child: ListTile(
-                        title: const Text('Manage Tuition'),
-                        leading: const Icon(Icons.manage_accounts),
+                      buildCard(
+                        child: const ListTile(
+                          title: Text('Manage Tuition'),
+                          leading: Icon(Icons.manage_accounts),
+                        ),
                         onTap: () {
                           Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const ManageTuitionScreen()),
-                          );
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const ManageTuitionScreen()));
                         },
                       ),
-                    ),
-                  ],
-                );
+                    ],
+                  );
+                });
               },
             ),
             const SizedBox(height: 20),
@@ -109,9 +126,7 @@ class AdminDashboardScreen extends StatelessWidget {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) =>
-                              // lazy import screen
-                              const CreateClassScreen()));
+                          builder: (_) => const CreateClassScreen()));
                 },
               ),
             ),
@@ -142,10 +157,8 @@ class AdminDashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            Text(
-              'All Enrollments',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
+            Text('All Enrollments',
+                style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 10),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
